@@ -1,0 +1,421 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+
+public class Prescription extends JPanel {
+
+    private CardLayout cardLayout;
+    private JPanel cardPanel;
+    private JPanel menuPanel;
+
+    public Prescription() {
+        setLayout(new BorderLayout());
+        setBackground(new Color(175, 238, 238));
+
+        cardLayout = new CardLayout();
+        cardPanel = new JPanel(cardLayout);
+        cardPanel.setBackground(new Color(175, 238, 238));
+
+        // Main menu panel
+        menuPanel = new JPanel(new GridBagLayout());
+        menuPanel.setBackground(new Color(175, 238, 238));
+
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        buttonPanel.setBackground(new Color(175, 238, 238));
+
+        JButton btnAppointments = new JButton("🩺 Appointments");
+        JButton btnMedicines = new JButton("💊 Medicine Requests");
+
+        btnAppointments.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnMedicines.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAppointments.setBackground(new Color(0, 150, 136)); 
+        btnAppointments.setForeground(Color.WHITE);
+        btnMedicines.setBackground(new Color(0, 102, 204)); 
+        btnMedicines.setForeground(Color.WHITE);
+
+        buttonPanel.add(btnAppointments);
+        buttonPanel.add(btnMedicines);
+        menuPanel.add(buttonPanel, new GridBagConstraints());
+
+        AdminAppointmentPanel appointments = new AdminAppointmentPanel();
+        AdminMedicinePanel medicines = new AdminMedicinePanel();
+
+        cardPanel.add(menuPanel, "MENU");
+        cardPanel.add(appointments, "APPOINTMENTS");
+        cardPanel.add(medicines, "MEDICINES");
+
+        add(cardPanel, BorderLayout.CENTER);
+
+        btnAppointments.addActionListener(e -> {
+            appointments.reloadAppointments();
+            cardLayout.show(cardPanel, "APPOINTMENTS");
+        });
+
+        btnMedicines.addActionListener(e -> {
+            medicines.reloadRequests();
+            cardLayout.show(cardPanel, "MEDICINES");
+        });
+    }
+
+
+    class AdminAppointmentPanel extends JPanel {
+        private JTextArea dataArea;
+        private JComboBox<String> patientList;
+        private JComboBox<String> doctorBox;
+        private JTextField dateField;
+        private JButton approveBtn, declineBtn, backBtn;
+
+        public AdminAppointmentPanel() {
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            setBackground(new Color(224, 255, 255));
+
+            backBtn = new JButton("⬅ Back");
+            backBtn.setBackground(new Color(0, 150, 136));
+            backBtn.setForeground(Color.WHITE);
+            backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
+            add(backBtn, BorderLayout.NORTH);
+
+            dataArea = new JTextArea();
+            dataArea.setEditable(false);
+            dataArea.setFont(new Font("Consolas", Font.PLAIN, 13));
+            dataArea.setBackground(new Color(204, 255, 204));n
+            dataArea.setBorder(BorderFactory.createTitledBorder("Appointment Requests"));
+            add(new JScrollPane(dataArea), BorderLayout.CENTER);
+
+          
+            JPanel bottom = new JPanel(new GridLayout(5, 2, 5, 5));
+            bottom.setBorder(BorderFactory.createTitledBorder("Assign Doctor and Date"));
+            bottom.setBackground(new Color(204, 255, 204)); 
+
+            bottom.add(new JLabel("Select Patient:"));
+            patientList = new JComboBox<>();
+            bottom.add(patientList);
+
+            bottom.add(new JLabel("Doctor Assigned:"));
+            doctorBox = new JComboBox<>();
+            loadDoctors();
+            bottom.add(doctorBox);
+
+            bottom.add(new JLabel("Appointment Date (YYYY-MM-DD):"));
+            dateField = new JTextField();
+            bottom.add(dateField);
+
+            approveBtn = new JButton("✅ Approve");
+            approveBtn.setBackground(new Color(0, 102, 204));
+            approveBtn.setForeground(Color.WHITE);
+
+            declineBtn = new JButton("❌ Decline");
+            declineBtn.setBackground(new Color(204, 0, 0));
+            declineBtn.setForeground(Color.WHITE);
+
+            bottom.add(approveBtn);
+            bottom.add(declineBtn);
+
+            add(bottom, BorderLayout.SOUTH);
+
+            reloadAppointments();
+            approveBtn.addActionListener(e -> handleAppointment(true));
+            declineBtn.addActionListener(e -> handleAppointment(false));
+        }
+
+        private void loadDoctors() {
+            doctorBox.removeAllItems();
+            File file = new File("doctors.txt");
+            if (!file.exists()) {
+                doctorBox.addItem("No doctors available");
+                return;
+            }
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] data = line.split(",", 4);
+                    if (data.length >= 4) doctorBox.addItem(data[0]);
+                }
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error loading doctors: " + e.getMessage());
+            }
+        }
+
+        private String getDoctorAvailability(String doctorName) {
+            File file = new File("doctors.txt");
+            if (!file.exists()) return "Not Available";
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] data = line.split(",", 4);
+                    if (data.length >= 4 && data[0].equals(doctorName)) return data[3];
+                }
+            } catch (IOException e) { e.printStackTrace(); }
+            return "Not Available";
+        }
+
+        private void reloadAppointments() {
+            dataArea.setText("");
+            patientList.removeAllItems();
+            File file = new File("doctor_appointments.txt");
+            if (!file.exists()) {
+                dataArea.setText("No appointment requests yet.");
+                approveBtn.setEnabled(false);
+                declineBtn.setEnabled(false);
+                return;
+            }
+
+            boolean hasPending = false;
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] p = line.split(",");
+                    if (p.length >= 6) {
+                        String status = (p.length > 6) ? p[6] : "Pending";
+                        dataArea.append(
+                                "Username: " + p[0] + "\nName: " + p[1] + "\nAge: " + p[2] +
+                                        "\nGender: " + p[3] + "\nContact: " + p[4] + "\nSymptoms: " + p[5] +
+                                        "\nStatus: " + status + "\n-----------------------------\n"
+                        );
+                        if (status.equalsIgnoreCase("Pending")) {
+                            patientList.addItem(p[1]);
+                            hasPending = true;
+                        }
+                    }
+                }
+            } catch (IOException ex) {
+                dataArea.setText("Error loading data: " + ex.getMessage());
+            }
+            approveBtn.setEnabled(hasPending);
+            declineBtn.setEnabled(hasPending);
+        }
+
+        private void handleAppointment(boolean approve) {
+            String name = (String) patientList.getSelectedItem();
+            if (name == null) {
+                JOptionPane.showMessageDialog(this, "Please select a patient first.");
+                return;
+            }
+
+            File inputFile = new File("doctor_appointments.txt");
+            File tempFile = new File("temp.txt");
+            try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+                 BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] p = line.split(",");
+                    if (p.length < 6) { writer.write(line + "\n"); continue; }
+
+                    if (p[1].equals(name)) {
+                        String username = p[0];
+                        if (approve) {
+                            String doctor = (String) doctorBox.getSelectedItem();
+                            String date = dateField.getText().trim();
+                            if (doctor == null || doctor.isEmpty() || date.isEmpty()) {
+                                JOptionPane.showMessageDialog(this, "Please fill doctor and date fields!");
+                                return;
+                            }
+                            if (getDoctorAvailability(doctor).equalsIgnoreCase("Not Available")) {
+                                JOptionPane.showMessageDialog(this, "⚠ Doctor not available.", "Unavailable", JOptionPane.WARNING_MESSAGE);
+                                return;
+                            }
+                            line = username + "," + name + "," + p[2] + "," + p[3] + "," + p[4] + "," + p[5] + ",Approved,," + date;
+                            writeToFile("approved_appointments.txt", username + "," + doctor + "," + date);
+                            JOptionPane.showMessageDialog(this, "✅ Appointment approved for " + name);
+                        } else {
+                            String reason = JOptionPane.showInputDialog(this, "Enter reason for declining:", "Decline", JOptionPane.PLAIN_MESSAGE);
+                            if (reason == null || reason.trim().isEmpty()) {
+                                JOptionPane.showMessageDialog(this, "Decline reason required!");
+                                return;
+                            }
+                            line = username + "," + name + "," + p[2] + "," + p[3] + "," + p[4] + "," + p[5] + ",Declined," + reason + ",";
+                            writeToFile("declined_appointments.txt", username + "," + reason);
+                            JOptionPane.showMessageDialog(this, "❌ Appointment declined for " + name);
+                        }
+                    }
+                    writer.write(line + "\n");
+                }
+            } catch (IOException ex) { ex.printStackTrace(); }
+
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+            reloadAppointments();
+        }
+    }
+
+
+    class AdminMedicinePanel extends JPanel {
+        private JTextArea dataArea;
+        private JComboBox<String> patientList;
+        private JTextField medField;
+        private JButton approveBtn, declineBtn, backBtn;
+
+        public AdminMedicinePanel() {
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            setBackground(new Color(204, 255, 255));
+
+         
+            backBtn = new JButton("⬅ Back");
+            backBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            backBtn.setBackground(new Color(0, 150, 136));
+            backBtn.setForeground(Color.WHITE);
+            backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
+            add(backBtn, BorderLayout.NORTH);
+
+         
+            dataArea = new JTextArea();
+            dataArea.setEditable(false);
+            dataArea.setFont(new Font("Consolas", Font.PLAIN, 13));
+            dataArea.setBackground(new Color(204, 255, 204));
+            dataArea.setBorder(BorderFactory.createTitledBorder("Medicine Requests"));
+            add(new JScrollPane(dataArea), BorderLayout.CENTER);
+
+         
+            JPanel bottom = new JPanel(new GridBagLayout());
+            bottom.setBorder(BorderFactory.createTitledBorder("Manage Medicine Request"));
+            bottom.setBackground(new Color(204, 255, 204));
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            gbc.gridx = 0; gbc.gridy = 0;
+            bottom.add(new JLabel("Select Patient:"), gbc);
+            gbc.gridx = 1;
+            patientList = new JComboBox<>();
+            patientList.setPreferredSize(new Dimension(200, 25));
+            bottom.add(patientList, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 1;
+            bottom.add(new JLabel("Medicine to Prescribe:"), gbc);
+            gbc.gridx = 1;
+            medField = new JTextField();
+            medField.setPreferredSize(new Dimension(200, 25));
+            bottom.add(medField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 2;
+            approveBtn = new JButton("✅ Approve");
+            approveBtn.setBackground(new Color(0, 102, 204));
+            approveBtn.setForeground(Color.WHITE);
+            approveBtn.setEnabled(false);
+            bottom.add(approveBtn, gbc);
+
+            gbc.gridx = 1;
+            declineBtn = new JButton("❌ Decline");
+            declineBtn.setBackground(new Color(204, 0, 0)); 
+            declineBtn.setForeground(Color.WHITE);
+            declineBtn.setEnabled(false);
+            bottom.add(declineBtn, gbc);
+
+            add(bottom, BorderLayout.SOUTH);
+
+            reloadRequests();
+            approveBtn.addActionListener(e -> handleMedicine(true));
+            declineBtn.addActionListener(e -> handleMedicine(false));
+        }
+
+        private void reloadRequests() {
+            dataArea.setText("");
+            patientList.removeAllItems();
+            File file = new File("medicine_requests.txt");
+            if (!file.exists()) {
+                dataArea.setText("No medicine requests yet.");
+                approveBtn.setEnabled(false);
+                declineBtn.setEnabled(false);
+                return;
+            }
+
+            boolean hasPending = false;
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] p = line.split(",");
+                    if (p.length >= 6) {
+                        String status = (p.length > 6) ? p[6] : "Pending";
+                        dataArea.append(
+                                "Username: " + p[0] + "\nName: " + p[1] + "\nAge: " + p[2] +
+                                        "\nGender: " + p[3] + "\nSymptoms: " + p[4] + "\nAllergies: " + p[5] +
+                                        "\nStatus: " + status + "\n-----------------------------\n"
+                        );
+                        if (status.equalsIgnoreCase("Pending")) {
+                            patientList.addItem(p[1]);
+                            hasPending = true;
+                        }
+                    }
+                }
+            } catch (IOException ex) {
+                dataArea.setText("Error loading data: " + ex.getMessage());
+            }
+
+            approveBtn.setEnabled(hasPending);
+            declineBtn.setEnabled(hasPending);
+        }
+
+        private void handleMedicine(boolean approve) {
+            String name = (String) patientList.getSelectedItem();
+            if (name == null) {
+                JOptionPane.showMessageDialog(this, "Please select a patient first.");
+                return;
+            }
+
+            File inputFile = new File("medicine_requests.txt");
+            File tempFile = new File("temp.txt");
+            try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+                 BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] p = line.split(",");
+                    if (p.length < 6) { writer.write(line + "\n"); continue; }
+
+                    if (p[1].equals(name)) {
+                        String username = p[0];
+                        String allergies = p[5];
+
+                        if (approve) {
+                            String med = medField.getText().trim();
+                            if (med.isEmpty()) {
+                                JOptionPane.showMessageDialog(this, "Please enter medicine name first!");
+                                return;
+                            }
+                            line = username + "," + name + "," + p[2] + "," + p[3] + "," + p[4] + "," + allergies + ",Approved,," + med;
+                            writeToFile("medicine_advice.txt", username + "," + med);
+                            JOptionPane.showMessageDialog(this, "✅ Medicine approved for " + name);
+                        } else {
+                            String reason = JOptionPane.showInputDialog(this, "Enter reason for declining:", "Decline", JOptionPane.PLAIN_MESSAGE);
+                            if (reason == null || reason.trim().isEmpty()) {
+                                JOptionPane.showMessageDialog(this, "Decline reason required!");
+                                return;
+                            }
+                            line = username + "," + name + "," + p[2] + "," + p[3] + "," + p[4] + "," + allergies + ",Declined," + reason + ",";
+                            writeToFile("declined_medicine.txt", username + "," + reason);
+                            JOptionPane.showMessageDialog(this, "❌ Medicine declined for " + name);
+                        }
+                    }
+                    writer.write(line + "\n");
+                }
+            } catch (IOException ex) { ex.printStackTrace(); }
+
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+            reloadRequests();
+        }
+    }
+
+
+    private void writeToFile(String fileName, String data) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))) {
+            writer.write(data + "\n");
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error writing to file: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame f = new JFrame("Prescription Panel Test");
+            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            f.setSize(900, 600);
+            f.add(new Prescription());
+            f.setLocationRelativeTo(null);
+            f.setVisible(true);
+        });
+    }
+}
