@@ -1,0 +1,135 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+
+public class Notification extends JPanel {
+    private JTextArea notifArea;
+    private JButton refreshBtn;
+    private String username;
+
+    public Notification(String username) {
+        this.username = username;
+
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(new Color(245, 245, 245));
+
+        JLabel title = new JLabel("🔔 Notifications", JLabel.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        title.setForeground(new Color(0, 100, 150));
+        add(title, BorderLayout.NORTH);
+
+        notifArea = new JTextArea();
+        notifArea.setEditable(false);
+        notifArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        notifArea.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
+        notifArea.setBackground(new Color(255, 255, 245)); 
+        add(new JScrollPane(notifArea), BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(new Color(230, 245, 255));
+        refreshBtn = new JButton("🔄 Refresh Notifications");
+        styleButton(refreshBtn, new Color(0, 150, 136));
+        bottomPanel.add(refreshBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        refreshBtn.addActionListener(e -> loadNotifications());
+
+        loadNotifications();
+    }
+
+    public void loadNotifications() {
+        notifArea.setText(""); 
+        boolean found = false;
+
+        found |= loadFile("approved_appointments.txt", (parts) -> {
+            if (parts.length >= 3 && parts[0].equals(username)) {
+                notifArea.append("🩺 Appointment Approved!\n");
+                notifArea.append("Doctor: " + parts[1] + "\nDate: " + parts[2] + "\n");
+                notifArea.append("--------------------------------------\n");
+                return true;
+            }
+            return false;
+        });
+
+        found |= loadFile("declined_appointments.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                notifArea.append("❌ Appointment Declined\n");
+                notifArea.append("Reason: " + parts[1] + "\n");
+                notifArea.append("--------------------------------------\n");
+                return true;
+            }
+            return false;
+        });
+
+        found |= loadFile("medicine_advice.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                notifArea.append("💊 Medicine Request Approved!\n");
+                notifArea.append("Prescription: " + parts[1] + "\n");
+                notifArea.append("--------------------------------------\n");
+                return true;
+            }
+            return false;
+        });
+
+        found |= loadFile("declined_medicine.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                notifArea.append("🚫 Medicine Request Declined\n");
+                notifArea.append("Reason: " + parts[1] + "\n");
+                notifArea.append("--------------------------------------\n");
+                return true;
+            }
+            return false;
+        });
+
+        if (!found) {
+            notifArea.setText("📭 No notifications yet.");
+        }
+    }
+
+    private boolean loadFile(String fileName, FileProcessor processor) {
+        boolean found = false;
+        File file = new File(fileName);
+        if (file.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split(",", 3);
+                    if (processor.process(parts)) found = true;
+                }
+            } catch (IOException e) {
+                notifArea.append("⚠️ Error reading " + fileName + "\n");
+            }
+        }
+        return found;
+    }
+
+    private interface FileProcessor {
+        boolean process(String[] parts);
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { button.setBackground(color.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { button.setBackground(color); }
+        });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("User Notifications");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(700, 500);
+            frame.add(new Notification("testuser"));
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
+}
