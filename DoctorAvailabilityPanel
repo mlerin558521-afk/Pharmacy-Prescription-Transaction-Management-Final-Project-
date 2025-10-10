@@ -1,0 +1,225 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.*;
+
+public class DoctorAvailabilityPanel extends JPanel {
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
+    private DefaultTableModel tableModel;
+    private JTable table;
+
+    private JTextField nameField, specializationField;
+    private JTextArea descriptionArea;
+    private JComboBox<String> availabilityBox;
+
+    private static final String FILE_NAME = "doctors.txt";
+
+    public DoctorAvailabilityPanel() {
+        setLayout(new BorderLayout());
+        setBackground(new Color(64, 224, 208));
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+        mainPanel.setBackground(new Color(64, 224, 208));
+
+        JPanel listPanel = createDoctorListPanel();
+        JPanel addPanel = createAddDoctorPanel();
+
+        mainPanel.add(listPanel, "LIST");
+        mainPanel.add(addPanel, "ADD");
+
+        add(mainPanel, BorderLayout.CENTER);
+        cardLayout.show(mainPanel, "LIST");
+    }
+
+
+    private JPanel createDoctorListPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBackground(new Color(144, 238, 144));
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(new Color(0, 128, 128));
+        JLabel title = new JLabel("🩺 Doctor List");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(Color.WHITE);
+        top.add(title, BorderLayout.WEST);
+
+        JButton addBtn = new JButton("+ Add Doctor");
+        addBtn.setBackground(new Color(0, 102, 204));
+        addBtn.setForeground(Color.WHITE);
+        top.add(addBtn, BorderLayout.EAST);
+        panel.add(top, BorderLayout.NORTH);
+
+        String[] columns = {"Doctor Name", "Specialization", "Description", "Availability"};
+        tableModel = new DefaultTableModel(columns, 0);
+        table = new JTable(tableModel);
+        table.setRowHeight(25);
+        table.getTableHeader().setBackground(new Color(64, 224, 208));
+        table.getTableHeader().setForeground(Color.BLACK);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel();
+        bottom.setBackground(new Color(144, 238, 144)); 
+        JButton deleteBtn = new JButton("Delete Selected");
+        deleteBtn.setBackground(new Color(0, 102, 204));
+        deleteBtn.setForeground(Color.WHITE);
+        JButton saveBtn = new JButton("💾 Save Changes");
+        saveBtn.setBackground(new Color(0, 102, 204));
+        saveBtn.setForeground(Color.WHITE);
+        bottom.add(deleteBtn);
+        bottom.add(saveBtn);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        loadDoctorsFromFile();
+
+        addBtn.addActionListener(e -> cardLayout.show(mainPanel, "ADD"));
+        deleteBtn.addActionListener(e -> deleteDoctor());
+        saveBtn.addActionListener(e -> saveDoctorsToFile());
+
+        return panel;
+    }
+
+
+    private JPanel createAddDoctorPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        panel.setBackground(new Color(144, 238, 144));
+        
+        JLabel title = new JLabel("➕ Add New Doctor");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        panel.add(title, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(new Color(144, 238, 144));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        int row = 0;
+
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        form.add(new JLabel("Doctor Name:"), gbc);
+        gbc.gridx = 1;
+        nameField = new JTextField(20);
+        form.add(nameField, gbc);
+
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        form.add(new JLabel("Specialization:"), gbc);
+        gbc.gridx = 1;
+        specializationField = new JTextField(20);
+        form.add(specializationField, gbc);
+
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.anchor = GridBagConstraints.NORTH;
+        form.add(new JLabel("Description:"), gbc);
+        gbc.gridx = 1;
+        descriptionArea = new JTextArea(4, 20);
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+        JScrollPane descScroll = new JScrollPane(descriptionArea);
+        form.add(descScroll, gbc);
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        form.add(new JLabel("Availability:"), gbc);
+        gbc.gridx = 1;
+        availabilityBox = new JComboBox<>(new String[]{"Available", "Not Available"});
+        form.add(availabilityBox, gbc);
+
+        panel.add(form, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel();
+        bottom.setBackground(new Color(144, 238, 144));
+        JButton saveBtn = new JButton("✅ Save Doctor");
+        saveBtn.setBackground(new Color(0, 102, 204));
+        saveBtn.setForeground(Color.WHITE);
+        JButton backBtn = new JButton("⬅ Back to List");
+        backBtn.setBackground(new Color(0, 102, 204));
+        backBtn.setForeground(Color.WHITE);
+        bottom.add(saveBtn);
+        bottom.add(backBtn);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        saveBtn.addActionListener(e -> addDoctor());
+        backBtn.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
+
+        return panel;
+    }
+
+
+    private void addDoctor() {
+        String name = nameField.getText().trim();
+        String spec = specializationField.getText().trim();
+        String desc = descriptionArea.getText().trim();
+        String avail = (String) availabilityBox.getSelectedItem();
+
+        if (name.isEmpty() || spec.isEmpty() || desc.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please fill out all fields.");
+            return;
+        }
+
+        tableModel.addRow(new Object[]{name, spec, desc, avail});
+        saveDoctorsToFile();
+        clearForm();
+        JOptionPane.showMessageDialog(this, "Doctor added successfully!");
+        cardLayout.show(mainPanel, "LIST");
+    }
+
+    private void deleteDoctor() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a doctor to delete.");
+            return;
+        }
+        tableModel.removeRow(selectedRow);
+        saveDoctorsToFile();
+    }
+
+    private void saveDoctorsToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                String line = tableModel.getValueAt(i, 0) + "," +
+                              tableModel.getValueAt(i, 1) + "," +
+                              tableModel.getValueAt(i, 2) + "," +
+                              tableModel.getValueAt(i, 3);
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
+        }
+    }
+
+    private void loadDoctorsFromFile() {
+        File file = new File(FILE_NAME);
+        if (!file.exists()) return;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split(",", 4);
+                if (data.length == 4) {
+                    tableModel.addRow(data);
+                }
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error loading file: " + e.getMessage());
+        }
+    }
+
+    private void clearForm() {
+        nameField.setText("");
+        specializationField.setText("");
+        descriptionArea.setText("");
+        availabilityBox.setSelectedIndex(0);
+    }
+}
