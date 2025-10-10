@@ -1,0 +1,59 @@
+import javax.swing.*;
+import java.awt.*;
+
+public class DashboardUser extends JFrame {
+
+    public DashboardUser(String username) {
+        setTitle("User Dashboard - " + username);
+        setSize(800, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setBackground(new Color(245, 245, 245));
+        tabs.setForeground(new Color(0, 150, 136)); 
+
+        ShopPanel shopPanel = new ShopPanel();
+        PaymentUserPanel paymentPanel = new PaymentUserPanel(shopPanel);
+
+        tabs.add("Prescription", new PrescriptionUser(username));
+        tabs.add("Notifications", new Notification(username));
+        tabs.add("Shop", shopPanel);
+        tabs.add("Payment", paymentPanel);
+
+        tabs.addChangeListener(e -> {
+            if (tabs.getSelectedComponent() == paymentPanel) {
+                paymentPanel.updateTotal();
+            }
+        });
+
+        JButton logoutButton = new JButton("Log Out");
+        logoutButton.setBackground(new Color(0, 150, 136));
+        logoutButton.setForeground(Color.WHITE);
+        logoutButton.setFocusPainted(false);
+        logoutButton.setBorderPainted(false);
+        logoutButton.setOpaque(true);
+        logoutButton.addActionListener(e -> {
+            dispose();
+            new LoginFrame().setVisible(true);
+        });
+
+        logoutButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                logoutButton.setBackground(new Color(0, 121, 107));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                logoutButton.setBackground(new Color(0, 150, 136));
+            }
+        });
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(new Color(245, 245, 245));
+        bottomPanel.add(logoutButton);
+
+        add(tabs, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        setVisible(true);
+    }
+}
