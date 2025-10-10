@@ -1,0 +1,233 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class PaymentUserPanel extends JPanel {
+    private ShopPanel shopPanel;
+    private JLabel lblTitle, lblTotal;
+    private JButton btnPay, btnChoosePayment;
+
+    public PaymentUserPanel(ShopPanel shopPanel) {
+        this.shopPanel = shopPanel;
+        setLayout(new BorderLayout(20, 20));
+        setBackground(new Color(245, 245, 245));
+        setBorder(new EmptyBorder(30, 30, 30, 30));
+
+
+        lblTitle = new JLabel("Payment Panel", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblTitle.setForeground(new Color(0, 150, 136));
+        add(lblTitle, BorderLayout.NORTH);
+
+        lblTotal = new JLabel("", SwingConstants.CENTER);
+        lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTotal.setForeground(new Color(76, 175, 80)); 
+        lblTotal.setBorder(new EmptyBorder(15, 15, 15, 15));
+        add(lblTotal, BorderLayout.CENTER);
+
+        
+        JPanel bottomPanel = new JPanel(new GridLayout(2, 1, 15, 15));
+        bottomPanel.setBackground(new Color(245, 245, 245)); 
+
+        btnChoosePayment = createModernButton("Choose Payment Method", new Color(0, 150, 136)); 
+        btnPay = createModernButton("Pay Now", new Color(76, 175, 80)); 
+
+        bottomPanel.add(btnChoosePayment);
+        bottomPanel.add(btnPay);
+
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        
+        btnChoosePayment.addActionListener((ActionEvent e) -> choosePaymentMethod());
+        btnPay.addActionListener((ActionEvent e) -> processPayment());
+    }
+
+    
+    private JButton createModernButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorderPainted(false);
+
+        
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+
+        return button;
+    }
+
+    
+    public void updateTotal() {
+        lblTotal.setText("Total Amount: ₱" + String.format("%.2f", shopPanel.getTotalCost()));
+    }
+
+    private void choosePaymentMethod() {
+        String[] options = {"Cash", "Card"};
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                "Select Payment Method:",
+                "Payment Method",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (choice == 0) { 
+            handleCashPayment();
+        } else if (choice == 1) { 
+            handleCardPayment();
+        }
+    }
+
+    private void handleCashPayment() {
+        String amountStr = JOptionPane.showInputDialog(this, "Enter amount paid:", "Cash Payment", JOptionPane.PLAIN_MESSAGE);
+        if (amountStr == null) return;
+
+        try {
+            double amountPaid = Double.parseDouble(amountStr);
+            double total = shopPanel.getTotalCost();
+
+            if (amountPaid < total) {
+                JOptionPane.showMessageDialog(this, "Insufficient payment! Total is ₱" + total, "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            double change = amountPaid - total;
+            String receipt = generateReceipt("Cash", amountPaid, change);
+            showAndSaveReceipt(receipt);
+
+            shopPanel.getCartModel().setRowCount(0);
+            shopPanel.resetTotal();
+            updateTotal();
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid amount entered!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleCardPayment() {
+        JTextField nameField = new JTextField();
+        JTextField cardNumberField = new JTextField();
+        JTextField amountField = new JTextField();
+
+        Object[] message = {
+                "Cardholder Name:", nameField,
+                "Card Number:", cardNumberField,
+                "Amount to Pay:", amountField
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message, "Card Payment", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            String name = nameField.getText().trim();
+            String cardNumber = cardNumberField.getText().trim();
+            String amountStr = amountField.getText().trim();
+
+            if (name.isEmpty() || cardNumber.isEmpty() || amountStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                double amountPaid = Double.parseDouble(amountStr);
+                double total = shopPanel.getTotalCost();
+
+                if (amountPaid < total) {
+                    JOptionPane.showMessageDialog(this, "Insufficient payment! Total is ₱" + total, "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                double change = amountPaid - total;
+                String receipt = generateReceipt("Card (" + name + ")", amountPaid, change);
+                showAndSaveReceipt(receipt);
+
+                shopPanel.getCartModel().setRowCount(0);
+                shopPanel.resetTotal();
+                updateTotal();
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid amount entered!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    
+    private String generateReceipt(String paymentMethod, double amountPaid, double change) {
+        StringBuilder receipt = new StringBuilder();
+        receipt.append("====================================\n");
+        receipt.append("           PASTRIES & BAKESHOPPE\n");
+        receipt.append("====================================\n");
+        receipt.append("Date: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        receipt.append("Payment Method: ").append(paymentMethod).append("\n\n");
+
+        receipt.append("Items Purchased:\n");
+        receipt.append("------------------------------------\n");
+
+        for (int i = 0; i < shopPanel.getCartModel().getRowCount(); i++) {
+            String name = shopPanel.getCartModel().getValueAt(i, 0).toString();
+            String qty = shopPanel.getCartModel().getValueAt(i, 1).toString();
+            String price = shopPanel.getCartModel().getValueAt(i, 2).toString();
+            receipt.append(String.format("%-15s x%-3s ₱%s\n", name, qty, price));
+        }
+
+        receipt.append("------------------------------------\n");
+        receipt.append(String.format("Total: ₱%.2f\n", shopPanel.getTotalCost()));
+        receipt.append(String.format("Amount Paid: ₱%.2f\n", amountPaid));
+        receipt.append(String.format("Change: ₱%.2f\n", change));
+        receipt.append("====================================\n");
+        receipt.append("     Thank you for your purchase!\n");
+        receipt.append("====================================\n");
+
+        return receipt.toString();
+    }
+
+    private void showAndSaveReceipt(String receiptText) {
+        
+        JTextArea textArea = new JTextArea(receiptText);
+        textArea.setEditable(false);
+        textArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(400, 400));
+        JOptionPane.showMessageDialog(this, scrollPane, "Receipt", JOptionPane.INFORMATION_MESSAGE);
+
+        
+        try {
+            String fileName = "receipt_" +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".txt";
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.write(receiptText);
+            writer.close();
+            System.out.println("Receipt saved as: " + fileName);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error saving receipt file!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void processPayment() {
+        if (shopPanel.getCartModel().getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, "Please choose a payment method first.", "Info", JOptionPane.INFORMATION_MESSAGE);
+    }
+}
