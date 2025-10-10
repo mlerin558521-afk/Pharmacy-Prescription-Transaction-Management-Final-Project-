@@ -1,0 +1,217 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.FileWriter;
+
+public class PrescriptionUser extends JPanel {
+    private CardLayout cardLayout;
+    private JPanel cardPanel;
+
+    public PrescriptionUser(String username) {
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 245, 245));
+
+        cardLayout = new CardLayout();
+        cardPanel = new JPanel(cardLayout);
+        cardPanel.setBackground(new Color(245, 245, 245));
+
+        JPanel menuPanel = new JPanel(new GridBagLayout());
+        menuPanel.setBackground(new Color(245, 245, 245));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        buttonPanel.setBackground(new Color(245, 245, 245));
+
+        JButton btnAppointment = new JButton("🩺 Request Appointment");
+        JButton btnMedicine = new JButton("💊 Request Medicine");
+
+        btnAppointment.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnMedicine.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        styleButton(btnAppointment, new Color(0, 150, 136));
+        styleButton(btnMedicine, new Color(76, 175, 80));
+
+        buttonPanel.add(btnAppointment);
+        buttonPanel.add(btnMedicine);
+        menuPanel.add(buttonPanel, new GridBagConstraints());
+
+        AppointmentFormPanel appointmentPanel = new AppointmentFormPanel(username);
+        MedicineFormPanel medicinePanel = new MedicineFormPanel(username);
+
+        cardPanel.add(menuPanel, "MENU");
+        cardPanel.add(appointmentPanel, "APPOINTMENT");
+        cardPanel.add(medicinePanel, "MEDICINE");
+
+        add(cardPanel, BorderLayout.CENTER);
+
+        btnAppointment.addActionListener(e -> cardLayout.show(cardPanel, "APPOINTMENT"));
+        btnMedicine.addActionListener(e -> cardLayout.show(cardPanel, "MEDICINE"));
+    }
+
+
+    class AppointmentFormPanel extends JPanel {
+        private JTextField nameField, ageField, genderField, contactField, symptomsField;
+        private JTextArea messageArea;
+        private JButton backBtn, submitBtn;
+        private String username;
+
+        public AppointmentFormPanel(String username) {
+            this.username = username;
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            setBackground(new Color(245, 245, 245));
+
+            backBtn = new JButton("⬅ Back");
+            styleButton(backBtn, new Color(0, 100, 150));
+            backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
+            add(backBtn, BorderLayout.NORTH);
+
+            JPanel form = new JPanel(new GridLayout(5, 2, 5, 5));
+            form.setBackground(new Color(255, 255, 245)); // soft cream
+            form.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                    "Appointment Request Form", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+
+            form.add(new JLabel("Full Name:"));
+            nameField = new JTextField();
+            form.add(nameField);
+
+            form.add(new JLabel("Age:"));
+            ageField = new JTextField();
+            form.add(ageField);
+
+            form.add(new JLabel("Gender:"));
+            genderField = new JTextField();
+            form.add(genderField);
+
+            form.add(new JLabel("Contact No:"));
+            contactField = new JTextField();
+            form.add(contactField);
+
+            form.add(new JLabel("Symptoms:"));
+            symptomsField = new JTextField();
+            form.add(symptomsField);
+
+            add(form, BorderLayout.CENTER);
+
+            JPanel bottom = new JPanel(new BorderLayout());
+            bottom.setBackground(new Color(245, 245, 245));
+            submitBtn = new JButton("Submit Request");
+            styleButton(submitBtn, new Color(0, 150, 136));
+            messageArea = new JTextArea(4, 40);
+            messageArea.setEditable(false);
+            messageArea.setBackground(new Color(255, 255, 235));
+            messageArea.setBorder(BorderFactory.createTitledBorder("Message"));
+
+            bottom.add(submitBtn, BorderLayout.NORTH);
+            bottom.add(new JScrollPane(messageArea), BorderLayout.CENTER);
+            add(bottom, BorderLayout.SOUTH);
+
+            submitBtn.addActionListener(e -> saveAppointment());
+        }
+
+        private void saveAppointment() {
+            try (FileWriter fw = new FileWriter("doctor_appointments.txt", true)) {
+                fw.write(username + "," + nameField.getText() + "," + ageField.getText() + "," +
+                        genderField.getText() + "," + contactField.getText() + "," +
+                        symptomsField.getText() + "\n");
+                messageArea.setText("✅ Appointment request sent successfully!");
+            } catch (Exception ex) {
+                messageArea.setText("Error: " + ex.getMessage());
+            }
+        }
+    }
+
+
+    class MedicineFormPanel extends JPanel {
+        private JTextField nameField, ageField, genderField, symptomsField, allergiesField;
+        private JTextArea messageArea;
+        private JButton backBtn, submitBtn;
+        private String username;
+
+        public MedicineFormPanel(String username) {
+            this.username = username;
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            setBackground(new Color(245, 245, 245));
+
+            backBtn = new JButton("⬅ Back");
+            styleButton(backBtn, new Color(0, 100, 150));
+            backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
+            add(backBtn, BorderLayout.NORTH);
+
+            JPanel form = new JPanel(new GridLayout(6, 2, 5, 5));
+            form.setBackground(new Color(255, 255, 245));
+            form.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(76, 175, 80), 2),
+                    "Medicine Inquiry Form", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+
+            form.add(new JLabel("Full Name:"));
+            nameField = new JTextField();
+            form.add(nameField);
+
+            form.add(new JLabel("Age:"));
+            ageField = new JTextField();
+            form.add(ageField);
+
+            form.add(new JLabel("Gender:"));
+            genderField = new JTextField();
+            form.add(genderField);
+
+            form.add(new JLabel("Symptoms:"));
+            symptomsField = new JTextField();
+            form.add(symptomsField);
+
+            form.add(new JLabel("Allergies:"));
+            allergiesField = new JTextField();
+            form.add(allergiesField);
+
+            add(form, BorderLayout.CENTER);
+
+            JPanel bottom = new JPanel(new BorderLayout());
+            bottom.setBackground(new Color(245, 245, 245));
+            submitBtn = new JButton("Submit Request");
+            styleButton(submitBtn, new Color(76, 175, 80));
+            messageArea = new JTextArea(4, 40);
+            messageArea.setEditable(false);
+            messageArea.setBackground(new Color(255, 255, 235));
+            messageArea.setBorder(BorderFactory.createTitledBorder("Message"));
+
+            bottom.add(submitBtn, BorderLayout.NORTH);
+            bottom.add(new JScrollPane(messageArea), BorderLayout.CENTER);
+            add(bottom, BorderLayout.SOUTH);
+
+            submitBtn.addActionListener(e -> saveMedicineRequest());
+        }
+
+        private void saveMedicineRequest() {
+            try (FileWriter fw = new FileWriter("medicine_requests.txt", true)) {
+                fw.write(username + "," + nameField.getText() + "," + ageField.getText() + "," +
+                        genderField.getText() + "," + symptomsField.getText() + "," + allergiesField.getText() + "\n");
+                messageArea.setText("✅ Medicine request submitted successfully!");
+            } catch (Exception ex) {
+                messageArea.setText("Error: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { button.setBackground(color.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { button.setBackground(color); }
+        });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Prescription User Panel Test");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(700, 600);
+            frame.add(new PrescriptionUser("testuser"));
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
+}
