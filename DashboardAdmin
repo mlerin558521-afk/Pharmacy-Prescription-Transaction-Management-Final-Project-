@@ -1,0 +1,35 @@
+import java.awt.BorderLayout;
+import javax.swing.*;
+
+public class DashboardAdmin extends JFrame {
+
+    private ShopPanel shopPanel;
+
+    public DashboardAdmin() {
+        setTitle("Admin Dashboard");
+        setSize(800, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JTabbedPane tabs = new JTabbedPane();
+
+        tabs.add("Prescription", new Prescription());        
+        tabs.add("Stocks", new StocksPanel());
+        shopPanel = new ShopPanel();
+        tabs.add("Payment", new PaymentAdminPanel());
+        tabs.add("Doctors", new DoctorAvailabilityPanel());
+
+        JButton logoutButton = new JButton("Log Out");
+        logoutButton.addActionListener(e -> {
+            dispose();
+            new LoginFrame().setVisible(true);
+        });
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(logoutButton);
+
+        add(tabs, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
+        setVisible(true);
+    }
+}
