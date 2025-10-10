@@ -1,0 +1,106 @@
+import javax.swing.*;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+
+public class StocksPanel extends JPanel {
+    private JTable table;
+    private JTextField searchField;
+    private DefaultTableModel model;
+
+    public StocksPanel() {
+        setLayout(new BorderLayout());
+        setBackground(new Color(0, 128, 128)); 
+
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        topPanel.setBackground(new Color(64, 224, 208)); 
+
+
+        JLabel searchLabel = new JLabel("Search Medicine:");
+        searchLabel.setForeground(Color.BLACK);
+        searchLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        searchField = new JTextField(20);
+        searchField.setBackground(Color.WHITE);
+        searchField.setForeground(Color.BLACK);
+
+        JButton searchButton = new JButton("Search");
+        JButton showAllButton = new JButton("Show All");
+        JButton openInventoryButton = new JButton("Inventory Manager");
+
+        Color buttonBlue = new Color(0, 102, 204);
+        searchButton.setBackground(buttonBlue);
+        searchButton.setForeground(Color.WHITE);
+        showAllButton.setBackground(buttonBlue);
+        showAllButton.setForeground(Color.WHITE);
+        openInventoryButton.setBackground(buttonBlue);
+        openInventoryButton.setForeground(Color.WHITE);
+
+        topPanel.add(searchLabel);
+        topPanel.add(searchField);
+        topPanel.add(searchButton);
+        topPanel.add(showAllButton);
+        topPanel.add(openInventoryButton);
+        add(topPanel, BorderLayout.NORTH);
+
+        InventoryManager.loadFromFile();
+        model = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+        table = new JTable(model);
+        table.setDefaultRenderer(Object.class, new StockColorRenderer());
+        table.getTableHeader().setBackground(new Color(170, 216, 230));
+        table.getTableHeader().setBackground(new Color(173, 216, 230)); 
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        searchButton.addActionListener(e -> {
+            String query = searchField.getText().trim();
+            List<InventoryManager.InventoryItem> results = InventoryManager.searchItems(query);
+            model = InventoryManager.toAdminTableModel(results);
+            table.setModel(model);
+            table.setDefaultRenderer(Object.class, new StockColorRenderer());
+        });
+
+        showAllButton.addActionListener(e -> refreshTable());
+
+        openInventoryButton.addActionListener(e -> {
+            InventoryManager.InventoryFrame frame = new InventoryManager.InventoryFrame();
+            frame.setVisible(true);
+            new Timer(2000, evt -> refreshTable()).start();
+        });
+    }
+
+    private void refreshTable() {
+        InventoryManager.loadFromFile();
+        model = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+        table.setModel(model);
+        table.setDefaultRenderer(Object.class, new StockColorRenderer());
+    }
+
+    private static class StockColorRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            try {
+                int quantityCol = table.getColumnModel().getColumnIndex("Quantity");
+                int quantity = Integer.parseInt(table.getValueAt(row, quantityCol).toString());
+
+                if (quantity < 10) c.setBackground(new Color(255, 102, 102));
+                else if (quantity <= 50) c.setBackground(new Color(255, 255, 153));
+                else c.setBackground(new Color(153, 255, 153));
+
+                c.setForeground(Color.BLACK);
+            } catch (Exception ex) {
+                c.setBackground(new Color(144, 238, 144));
+                c.setForeground(Color.BLACK);
+            }
+
+            return c;
+        }
+    }
+}
