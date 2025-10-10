@@ -1,0 +1,143 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class PaymentAdminPanel extends JPanel {
+
+    private JTable receiptTable;
+    private DefaultTableModel receiptModel;
+    private JButton btnViewReceipt, btnRefresh;
+    private JTextArea receiptArea;
+
+    public PaymentAdminPanel() {
+        setLayout(new BorderLayout(15, 15));
+        setBackground(new Color(224, 247, 250));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("Payment Receipts", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        title.setForeground(new Color(0, 121, 107));
+        add(title, BorderLayout.NORTH);
+
+        receiptModel = new DefaultTableModel(new String[]{"Date", "Customer", "Payment Type"}, 0);
+        receiptTable = new JTable(receiptModel);
+        receiptTable.setRowHeight(25);
+        receiptTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        receiptTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        receiptTable.getTableHeader().setBackground(new Color(0, 150, 136));
+        receiptTable.getTableHeader().setForeground(Color.WHITE);
+        receiptTable.setSelectionBackground(new Color(100, 181, 246));
+        receiptTable.setSelectionForeground(Color.BLACK);
+
+        JScrollPane scrollPane = new JScrollPane(receiptTable);
+        add(scrollPane, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(new Color(224, 247, 250));
+
+        btnViewReceipt = createStyledButton("View Receipt", new Color(56, 142, 60));
+        btnRefresh = createStyledButton("Refresh", new Color(30, 136, 229));
+
+        buttonPanel.add(btnViewReceipt);
+        buttonPanel.add(btnRefresh);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        loadReceipts();
+
+        btnViewReceipt.addActionListener(e -> viewSelectedReceipt());
+        btnRefresh.addActionListener(e -> loadReceipts());
+    }
+
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+        return button;
+    }
+
+    private void loadReceipts() {
+        receiptModel.setRowCount(0);
+        File folder = new File(".");
+        File[] receiptFiles = folder.listFiles((dir, name) -> name.startsWith("receipt_") && name.endsWith(".txt"));
+
+        if (receiptFiles == null || receiptFiles.length == 0) {
+            return;
+        }
+
+        Arrays.sort(receiptFiles, Comparator.comparingLong(File::lastModified).reversed());
+
+        for (File file : receiptFiles) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                String date = "N/A";
+                String customer = "Guest";
+                String paymentType = "Unknown";
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("Date:")) date = line.replace("Date:", "").trim();
+                    else if (line.startsWith("Customer:")) customer = line.replace("Customer:", "").trim();
+                    else if (line.startsWith("Payment Method:")) paymentType = line.replace("Payment Method:", "").trim();
+                }
+
+                receiptModel.addRow(new Object[]{date, customer, paymentType});
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void viewSelectedReceipt() {
+        int selectedRow = receiptTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a receipt to view.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String selectedDate = receiptModel.getValueAt(selectedRow, 0).toString();
+
+        File folder = new File(".");
+        File[] receiptFiles = folder.listFiles((dir, name) -> name.startsWith("receipt_") && name.endsWith(".txt"));
+
+        if (receiptFiles == null) return;
+
+        for (File file : receiptFiles) {
+            try {
+                String content = new String(Files.readAllBytes(file.toPath()));
+
+                if (content.contains(selectedDate)) {
+                    JTextArea textArea = new JTextArea(content);
+                    textArea.setEditable(false);
+                    textArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    scrollPane.setPreferredSize(new Dimension(450, 400));
+                    JOptionPane.showMessageDialog(this, scrollPane, "Receipt Details", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "Receipt file not found.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
