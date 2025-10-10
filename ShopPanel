@@ -1,0 +1,191 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class ShopPanel extends JPanel {
+    private JTable tableInventory, tableCart;
+    private DefaultTableModel modelInventory, modelCart;
+    private JTextField searchField;
+    private JLabel totalLabel;
+    private double totalCost = 0.0;
+
+    public ShopPanel() {
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 245, 245)); 
+
+        
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        topPanel.setBackground(new Color(230, 245, 255)); 
+        JLabel lblSearch = new JLabel("Search Medicine:");
+        lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblSearch.setForeground(new Color(0, 100, 150)); 
+        searchField = new JTextField(20);
+        searchField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
+
+        JButton btnSearch = new JButton("Search");
+        JButton btnShowAll = new JButton("Show All");
+        styleButton(btnSearch, new Color(0, 150, 136));
+        styleButton(btnShowAll, new Color(0, 150, 136));
+
+        topPanel.add(lblSearch);
+        topPanel.add(searchField);
+        topPanel.add(btnSearch);
+        topPanel.add(btnShowAll);
+        add(topPanel, BorderLayout.NORTH);
+
+        
+        JPanel tablesPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        tablesPanel.setBackground(new Color(245, 245, 245));
+
+        
+        InventoryManager.loadFromFile();
+        modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+        tableInventory = new JTable(modelInventory);
+        tableInventory.setFillsViewportHeight(true);
+        tableInventory.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tableInventory.setRowHeight(22);
+        JScrollPane scrollInventory = new JScrollPane(tableInventory);
+        scrollInventory.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                "Available Medicines", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+
+        
+        modelCart = new DefaultTableModel(new String[]{"Medicine Name", "Quantity", "Price", "Subtotal"}, 0);
+        tableCart = new JTable(modelCart);
+        tableCart.setFillsViewportHeight(true);
+        tableCart.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tableCart.setRowHeight(22);
+        JScrollPane scrollCart = new JScrollPane(tableCart);
+        scrollCart.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                "Shopping Cart", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+
+        tablesPanel.add(scrollInventory);
+        tablesPanel.add(scrollCart);
+        add(tablesPanel, BorderLayout.CENTER);
+
+        
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        bottomPanel.setBackground(new Color(230, 245, 255));
+        JButton btnAddToCart = new JButton("Add to Cart");
+        JButton btnClearCart = new JButton("Clear Cart");
+        JButton btnCheckout = new JButton("Proceed to Payment");
+        styleButton(btnAddToCart, new Color(0, 150, 136));
+        styleButton(btnClearCart, new Color(255, 112, 67)); 
+        styleButton(btnCheckout, new Color(76, 175, 80)); 
+
+        totalLabel = new JLabel("Total: ₱0.00");
+        totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        totalLabel.setForeground(new Color(0, 100, 150));
+
+        bottomPanel.add(btnAddToCart);
+        bottomPanel.add(btnClearCart);
+        bottomPanel.add(totalLabel);
+        bottomPanel.add(btnCheckout);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        
+        btnSearch.addActionListener(e -> {
+            String query = searchField.getText().trim();
+            List<InventoryManager.InventoryItem> results = InventoryManager.searchItems(query);
+            modelInventory = InventoryManager.toAdminTableModel(results);
+            tableInventory.setModel(modelInventory);
+        });
+
+        btnShowAll.addActionListener(e -> {
+            InventoryManager.loadFromFile();
+            modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+            tableInventory.setModel(modelInventory);
+        });
+
+        btnAddToCart.addActionListener(e -> addToCart());
+        btnClearCart.addActionListener(e -> clearCart());
+        btnCheckout.addActionListener(e -> checkout());
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+    }
+
+    
+    private void addToCart() {
+        int selectedRow = tableInventory.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a medicine first.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String name = tableInventory.getValueAt(selectedRow, 0).toString();
+        int stock = Integer.parseInt(tableInventory.getValueAt(selectedRow, 1).toString());
+        double price = Double.parseDouble(tableInventory.getValueAt(selectedRow, 2).toString());
+
+        String qtyStr = JOptionPane.showInputDialog(this, "Enter quantity to buy:", "Quantity", JOptionPane.PLAIN_MESSAGE);
+        if (qtyStr == null) return;
+
+        try {
+            int qty = Integer.parseInt(qtyStr);
+            if (qty <= 0 || qty > stock) {
+                JOptionPane.showMessageDialog(this, "Invalid quantity. Must be between 1 and " + stock, "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            InventoryManager.restockItem(name, -qty);
+            InventoryManager.saveToFile();
+            InventoryManager.loadFromFile();
+            modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+            tableInventory.setModel(modelInventory);
+
+            double subtotal = qty * price;
+            totalCost += subtotal;
+            totalLabel.setText("Total: ₱" + String.format("%.2f", totalCost));
+            modelCart.addRow(new Object[]{name, qty, price, subtotal});
+            JOptionPane.showMessageDialog(this, "Added to cart successfully!");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid number.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void clearCart() {
+        for (int i = 0; i < modelCart.getRowCount(); i++) {
+            String name = modelCart.getValueAt(i, 0).toString();
+            int qty = Integer.parseInt(modelCart.getValueAt(i, 1).toString());
+            InventoryManager.restockItem(name, qty);
+        }
+        InventoryManager.saveToFile();
+        InventoryManager.loadFromFile();
+        modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+        tableInventory.setModel(modelInventory);
+
+        modelCart.setRowCount(0);
+        totalCost = 0;
+        totalLabel.setText("Total: ₱0.00");
+    }
+
+    private void checkout() {
+        if (modelCart.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        JOptionPane.showMessageDialog(this, "Proceed to Payment tab to pay.", "Checkout", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    
+    public DefaultTableModel getCartModel() { return modelCart; }
+    public double getTotalCost() { return totalCost; }
+    public void resetTotal() {
+        totalCost = 0;
+        totalLabel.setText("Total: ₱0.00");
+    }
+}
