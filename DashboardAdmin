@@ -1,35 +1,95 @@
-import java.awt.BorderLayout;
+import java.awt.*;
 import javax.swing.*;
 
 public class DashboardAdmin extends JFrame {
 
     private ShopPanel shopPanel;
+    private JLabel timerLabel;
+    private Timer swingTimer;
+    private long startTime;
 
     public DashboardAdmin() {
+        TimeMeasurement timeMeasure = new TimeMeasurement();
+        timeMeasure.start();
+
         setTitle("Admin Dashboard");
         setSize(800, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        Color background = new Color(245, 245, 245);
+        Color accent = new Color(0, 150, 136);
 
         JTabbedPane tabs = new JTabbedPane();
-
-        tabs.add("Prescription", new Prescription());        
+        tabs.add("Prescription", new Prescription());
         tabs.add("Stocks", new StocksPanel());
-        shopPanel = new ShopPanel();
         tabs.add("Payment", new PaymentAdminPanel());
         tabs.add("Doctors", new DoctorAvailabilityPanel());
+        tabs.setBackground(background);
+        tabs.setForeground(Color.DARK_GRAY);
 
         JButton logoutButton = new JButton("Log Out");
+        styleButton(logoutButton, accent);
         logoutButton.addActionListener(e -> {
             dispose();
             new LoginFrame().setVisible(true);
         });
 
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.add(logoutButton);
+        timerLabel = new JLabel("Time running: 00:00:00", SwingConstants.RIGHT);
+        timerLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        timerLabel.setForeground(Color.DARK_GRAY);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBackground(background);
+        bottomPanel.add(logoutButton, BorderLayout.WEST);
+        bottomPanel.add(timerLabel, BorderLayout.EAST);
 
         add(tabs, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+
+        startVisibleTimer();
+
         setVisible(true);
+
+        timeMeasure.stop();
+        timeMeasure.printDuration("DashboardAdmin");
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+    }
+
+    private void startVisibleTimer() {
+        startTime = System.currentTimeMillis();
+        swingTimer = new Timer(1000, e -> {
+            long elapsedMillis = System.currentTimeMillis() - startTime;
+            long totalSeconds = elapsedMillis / 1000;
+            long hours = totalSeconds / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+            long seconds = totalSeconds % 60;
+
+            timerLabel.setText(String.format("Time running: %02d:%02d:%02d", hours, minutes, seconds));
+        });
+        swingTimer.start();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new DashboardAdmin());
     }
 }
