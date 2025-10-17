@@ -8,15 +8,18 @@ public class StocksPanel extends JPanel {
     private JTable table;
     private JTextField searchField;
     private DefaultTableModel model;
+    private JLabel searchTimeLabel;
 
     public StocksPanel() {
-        setLayout(new BorderLayout());
-        setBackground(new Color(0, 128, 128)); 
+        setLayout(new BorderLayout(10, 10));
+        setBackground(new Color(0, 128, 128));
 
         JPanel topPanel = new JPanel();
-        topPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        topPanel.setBackground(new Color(64, 224, 208)); 
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.setBackground(new Color(64, 224, 208));
 
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        searchPanel.setBackground(new Color(64, 224, 208));
 
         JLabel searchLabel = new JLabel("Search Medicine:");
         searchLabel.setForeground(Color.BLACK);
@@ -25,50 +28,132 @@ public class StocksPanel extends JPanel {
         searchField = new JTextField(20);
         searchField.setBackground(Color.WHITE);
         searchField.setForeground(Color.BLACK);
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        searchField.setBorder(BorderFactory.createLineBorder(new Color(0, 100, 150), 2));
 
         JButton searchButton = new JButton("Search");
         JButton showAllButton = new JButton("Show All");
         JButton openInventoryButton = new JButton("Inventory Manager");
 
         Color buttonBlue = new Color(0, 102, 204);
-        searchButton.setBackground(buttonBlue);
-        searchButton.setForeground(Color.WHITE);
-        showAllButton.setBackground(buttonBlue);
-        showAllButton.setForeground(Color.WHITE);
-        openInventoryButton.setBackground(buttonBlue);
-        openInventoryButton.setForeground(Color.WHITE);
+        styleButton(searchButton, buttonBlue);
+        styleButton(showAllButton, buttonBlue);
+        styleButton(openInventoryButton, buttonBlue);
 
-        topPanel.add(searchLabel);
-        topPanel.add(searchField);
-        topPanel.add(searchButton);
-        topPanel.add(showAllButton);
-        topPanel.add(openInventoryButton);
+        searchPanel.add(searchLabel);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        searchPanel.add(showAllButton);
+        searchPanel.add(openInventoryButton);
+
+        searchTimeLabel = new JLabel(" ");
+        searchTimeLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        searchTimeLabel.setForeground(Color.DARK_GRAY);
+        searchTimeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        searchTimeLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+        topPanel.add(searchPanel);
+        topPanel.add(searchTimeLabel);
         add(topPanel, BorderLayout.NORTH);
 
         InventoryManager.loadFromFile();
         model = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
         table = new JTable(model);
         table.setDefaultRenderer(Object.class, new StockColorRenderer());
-        table.getTableHeader().setBackground(new Color(170, 216, 230));
-        table.getTableHeader().setBackground(new Color(173, 216, 230)); 
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setRowHeight(22);
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JTableHeader header = table.getTableHeader();
+        header.setBackground(new Color(173, 216, 230));
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(0, 100, 150), 2),
+                "Medicine Stocks",
+                0, 0,
+                new Font("Segoe UI", Font.BOLD, 14),
+                Color.BLACK
+        ));
+        add(scrollPane, BorderLayout.CENTER);
 
         searchButton.addActionListener(e -> {
             String query = searchField.getText().trim();
+
+            long startTime = System.nanoTime();
             List<InventoryManager.InventoryItem> results = InventoryManager.searchItems(query);
+            long endTime = System.nanoTime();
+
+            long durationNano = endTime - startTime;
+            long durationMillis = durationNano / 1_000_000;
+            long seconds = (durationMillis / 1000) % 60;
+            long minutes = (durationMillis / (1000 * 60)) % 60;
+
+            String timeText;
+            if (minutes > 0) {
+                timeText = String.format("Search completed in %d minute%s and %d second%s • Results: %d",
+                        minutes, (minutes > 1 ? "s" : ""), seconds, (seconds != 1 ? "s" : ""), results.size());
+            } else {
+                timeText = String.format("Search completed in %d second%s • Results: %d",
+                        seconds, (seconds != 1 ? "s" : ""), results.size());
+            }
+
             model = InventoryManager.toAdminTableModel(results);
             table.setModel(model);
             table.setDefaultRenderer(Object.class, new StockColorRenderer());
+            searchTimeLabel.setText(timeText);
         });
 
-        showAllButton.addActionListener(e -> refreshTable());
+        showAllButton.addActionListener(e -> {
+            long startTime = System.nanoTime();
+            InventoryManager.loadFromFile();
+            List<InventoryManager.InventoryItem> allItems = InventoryManager.getAllItems();
+            model = InventoryManager.toAdminTableModel(allItems);
+            table.setModel(model);
+            table.setDefaultRenderer(Object.class, new StockColorRenderer());
+            long endTime = System.nanoTime();
+
+            long durationNano = endTime - startTime;
+            long durationMillis = durationNano / 1_000_000;
+            long seconds = (durationMillis / 1000) % 60;
+            long minutes = (durationMillis / (1000 * 60)) % 60;
+
+            String timeText;
+            if (minutes > 0) {
+                timeText = String.format("Loaded all data in %d minute%s and %d second%s • Items: %d",
+                        minutes, (minutes > 1 ? "s" : ""), seconds, (seconds != 1 ? "s" : ""), allItems.size());
+            } else {
+                timeText = String.format("Loaded all data in %d second%s • Items: %d",
+                        seconds, (seconds != 1 ? "s" : ""), allItems.size());
+            }
+
+            searchTimeLabel.setText(timeText);
+        });
 
         openInventoryButton.addActionListener(e -> {
             InventoryManager.InventoryFrame frame = new InventoryManager.InventoryFrame();
             frame.setVisible(true);
             new Timer(2000, evt -> refreshTable()).start();
+        });
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
         });
     }
 
@@ -90,9 +175,9 @@ public class StocksPanel extends JPanel {
                 int quantityCol = table.getColumnModel().getColumnIndex("Quantity");
                 int quantity = Integer.parseInt(table.getValueAt(row, quantityCol).toString());
 
-                if (quantity < 10) c.setBackground(new Color(255, 102, 102));
-                else if (quantity <= 50) c.setBackground(new Color(255, 255, 153));
-                else c.setBackground(new Color(153, 255, 153));
+                if (quantity < 10) c.setBackground(new Color(255, 102, 102));       
+                else if (quantity <= 50) c.setBackground(new Color(255, 255, 153)); 
+                else c.setBackground(new Color(153, 255, 153));                   
 
                 c.setForeground(Color.BLACK);
             } catch (Exception ex) {
