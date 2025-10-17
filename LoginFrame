@@ -11,64 +11,76 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame() {
         setTitle("Login Page");
-        setSize(350, 220);
+        setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new GridLayout(4, 1, 10, 5));
-        getContentPane().setBackground(new Color(245, 245, 245));
+        getContentPane().setBackground(Color.WHITE);
+        setLayout(new BorderLayout(10, 10));
 
         loadUsersFromFile();
 
-        // Default admin
         if (!users.containsKey("admin")) {
             users.put("admin", "admin");
             saveUsersToFile();
         }
 
-        JLabel welcomeLabel = new JLabel("Welcome! Please Log In", SwingConstants.CENTER);
-        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        welcomeLabel.setForeground(new Color(0, 150, 136));
+        JLabel titleLabel = new JLabel("Welcome!", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(0, 150, 136));
+
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(Color.WHITE);
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
+        titlePanel.add(titleLabel, BorderLayout.CENTER);
+
+        add(titlePanel, BorderLayout.NORTH);
+
+        JPanel formPanel = new JPanel();
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel userLabel = new JLabel("Username:");
-        JLabel passLabel = new JLabel("Password:");
-        usernameField = new JTextField();
-        passwordField = new JPasswordField();
-
-        //  text fields
+        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        usernameField = new JTextField(15);
         usernameField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
+
+        JLabel passLabel = new JLabel("Password:");
+        passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField = new JPasswordField(15);
         passwordField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
 
-        JButton loginButton = new JButton("Login");
-        JButton signupButton = new JButton("Sign Up");
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(userLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(usernameField, gbc);
 
-        // Button styling
-        styleButton(loginButton, new Color(0, 150, 136));
-        styleButton(signupButton, new Color(76, 175, 80));
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(passLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(passwordField, gbc);
 
-        JPanel formPanel = new JPanel(new GridLayout(2, 2, 5, 5));
-        formPanel.setBackground(new Color(245, 245, 245));
-        formPanel.add(userLabel);
-        formPanel.add(usernameField);
-        formPanel.add(passLabel);
-        formPanel.add(passwordField);
+        add(formPanel, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(new Color(245, 245, 245));
+        buttonPanel.setBackground(Color.WHITE);
+        JButton loginButton = new JButton("Login");
+        JButton signupButton = new JButton("Sign Up");
+        styleButton(loginButton, new Color(0, 150, 136));
+        styleButton(signupButton, new Color(76, 175, 80));
         buttonPanel.add(loginButton);
         buttonPanel.add(signupButton);
+        add(buttonPanel, BorderLayout.SOUTH);
 
-        add(welcomeLabel);
-        add(formPanel);
-        add(buttonPanel);
-
-        // Login button
         loginButton.addActionListener(e -> {
             String user = usernameField.getText().trim();
             String pass = new String(passwordField.getPassword());
 
             if (users.containsKey(user) && users.get(user).equals(pass)) {
                 JOptionPane.showMessageDialog(this, "Login Successful!");
-
                 if (user.equals("admin")) {
                     new DashboardAdmin();
                 } else {
@@ -80,7 +92,6 @@ public class LoginFrame extends JFrame {
             }
         });
 
-        // Sign Up button
         signupButton.addActionListener(e -> {
             new SignUpPage(users, this);
             setVisible(false);
@@ -90,22 +101,18 @@ public class LoginFrame extends JFrame {
     private void styleButton(JButton button, Color color) {
         button.setBackground(color);
         button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(color.darker());
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(color);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { button.setBackground(color.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { button.setBackground(color); }
         });
     }
 
-    // Load users from file
     private void loadUsersFromFile() {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
@@ -120,7 +127,6 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    // Save users to file
     private void saveUsersToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
             for (String username : users.keySet()) {
@@ -132,34 +138,52 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    // --- Sign Up Window ---
     class SignUpPage extends JFrame {
         public SignUpPage(HashMap<String, String> users, JFrame loginPage) {
             setTitle("Sign Up");
-            setSize(350, 200);
+            setSize(400, 350);
             setLocationRelativeTo(null);
-            setLayout(new GridLayout(4, 2, 5, 5));
-            getContentPane().setBackground(new Color(245, 245, 245));
+            setLayout(new GridBagLayout());
+            getContentPane().setBackground(Color.WHITE);
 
-            JLabel userLabel = new JLabel("New Username:");
-            JLabel passLabel = new JLabel("New Password:");
-            JTextField userField = new JTextField();
-            JPasswordField passField = new JPasswordField();
-            JButton registerButton = new JButton("Register");
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(10, 10, 10, 10);
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            JLabel title = new JLabel("Create Your Account", SwingConstants.CENTER);
+            title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            title.setForeground(new Color(0, 150, 136));
+            gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+            add(title, gbc);
+
+            gbc.gridwidth = 1;
+
+            JLabel nameLabel = new JLabel("Full Name:");
+            JTextField nameField = new JTextField(15);
+            JLabel userLabel = new JLabel("Username:");
+            JTextField userField = new JTextField(15);
+            JLabel passLabel = new JLabel("Password:");
+            JPasswordField passField = new JPasswordField(15);
+            JLabel emailLabel = new JLabel("Email:");
+            JTextField emailField = new JTextField(15);
+
             JButton backButton = new JButton("Back");
-
-            userField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
-            passField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
-
-            styleButton(registerButton, new Color(76, 175, 80));
+            JButton registerButton = new JButton("Register");
             styleButton(backButton, new Color(0, 150, 136));
+            styleButton(registerButton, new Color(76, 175, 80));
 
-            add(userLabel);
-            add(userField);
-            add(passLabel);
-            add(passField);
-            add(backButton);
-            add(registerButton);
+            gbc.gridx = 0; gbc.gridy = 1; add(nameLabel, gbc);
+            gbc.gridx = 1; add(nameField, gbc);
+            gbc.gridx = 0; gbc.gridy = 2; add(userLabel, gbc);
+            gbc.gridx = 1; add(userField, gbc);
+            gbc.gridx = 0; gbc.gridy = 3; add(passLabel, gbc);
+            gbc.gridx = 1; add(passField, gbc);
+            gbc.gridx = 0; gbc.gridy = 4; add(emailLabel, gbc);
+            gbc.gridx = 1; add(emailField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 5; add(backButton, gbc);
+            gbc.gridx = 1; add(registerButton, gbc);
 
             registerButton.addActionListener(e -> {
                 String newUser = userField.getText().trim();
