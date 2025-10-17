@@ -149,6 +149,7 @@ public class InventoryManager {
         private DefaultTableModel tableModel;
         private JTable table;
         private JTextField searchField;
+        private JLabel searchTimeLabel;
 
         public InventoryFrame() {
             setTitle("Inventory Manager");
@@ -161,26 +162,47 @@ public class InventoryManager {
 
             JPanel top = new JPanel(new BorderLayout(6, 6));
             top.setBackground(new Color(64, 224, 208));
+
             JLabel title = new JLabel("Inventory Manager", SwingConstants.CENTER);
             title.setFont(new Font("Arial", Font.BOLD, 18));
             title.setForeground(Color.BLACK);
             top.add(title, BorderLayout.CENTER);
 
-            JPanel searchPanel = new JPanel();
-            searchPanel.setBackground(new Color(144, 238, 144)); 
-            searchField = new JTextField(18);
-            JButton searchBtn = new JButton("Search");
-            searchBtn.setBackground(new Color(0, 102, 204));
-            searchBtn.setForeground(Color.WHITE);
-            JButton refreshBtn = new JButton("Refresh");
-            refreshBtn.setBackground(new Color(0, 102, 204));
-            refreshBtn.setForeground(Color.WHITE);
+            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 8));
+            searchPanel.setBackground(new Color(240, 248, 255));
 
-            searchPanel.add(new JLabel("Search:"));
+            JLabel searchLbl = new JLabel("Search:");
+            searchLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+            searchField = new JTextField(18);
+            searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+            JButton searchBtn = new JButton("Search");
+            JButton refreshBtn = new JButton("Refresh");
+
+            Color btnColor = new Color(0, 123, 255);
+            for (JButton b : new JButton[]{searchBtn, refreshBtn}) {
+                b.setBackground(btnColor);
+                b.setForeground(Color.WHITE);
+                b.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            }
+
+            searchPanel.add(searchLbl);
             searchPanel.add(searchField);
             searchPanel.add(searchBtn);
             searchPanel.add(refreshBtn);
-            top.add(searchPanel, BorderLayout.SOUTH);
+
+            JLabel searchTimeLabel = new JLabel(" ");
+            searchTimeLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+            searchTimeLabel.setForeground(Color.DARK_GRAY);
+            searchTimeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+            JPanel searchContainer = new JPanel(new BorderLayout());
+            searchContainer.setBackground(new Color(240, 248, 255));
+            searchContainer.add(searchPanel, BorderLayout.NORTH);
+            searchContainer.add(searchTimeLabel, BorderLayout.SOUTH);
+
+            top.add(searchContainer, BorderLayout.SOUTH);
             add(top, BorderLayout.NORTH);
 
             tableModel = InventoryManager.toAdminTableModel(getAllItems());
@@ -191,14 +213,14 @@ public class InventoryManager {
             add(new JScrollPane(table), BorderLayout.CENTER);
 
             JPanel bottom = new JPanel();
-            bottom.setBackground(new Color(144, 238, 144)); 
+            bottom.setBackground(new Color(144, 238, 144));
+
             JButton addBtn = new JButton("Add");
             JButton updateBtn = new JButton("Update");
             JButton deleteBtn = new JButton("Delete");
             JButton restockBtn = new JButton("Restock");
             JButton saveCloseBtn = new JButton("Save & Close");
 
-            Color btnColor = new Color(0, 102, 204);
             for (JButton b : new JButton[]{addBtn, updateBtn, deleteBtn, restockBtn, saveCloseBtn}) {
                 b.setBackground(btnColor);
                 b.setForeground(Color.WHITE);
@@ -213,18 +235,41 @@ public class InventoryManager {
 
             searchBtn.addActionListener(e -> {
                 String q = searchField.getText().trim();
+
+                long startTime = System.nanoTime();
                 List<InventoryItem> found = searchItems(q);
+                long endTime = System.nanoTime();
+
+                long durationNano = endTime - startTime;
+                long durationMillis = durationNano / 1_000_000;
+                long seconds = (durationMillis / 1000) % 60;
+                long minutes = (durationMillis / (1000 * 60)) % 60;
+
+                String timeText;
+                if (minutes > 0) {
+                    timeText = String.format("Search completed in %d minute%s and %d second%s • Results: %d",
+                            minutes, (minutes > 1 ? "s" : ""), seconds, (seconds != 1 ? "s" : ""), found.size());
+                } else {
+                    timeText = String.format("Search completed in %d second%s • Results: %d",
+                            seconds, (seconds != 1 ? "s" : ""), found.size());
+                }
+
                 tableModel = toAdminTableModel(found);
                 table.setModel(tableModel);
+
+                searchTimeLabel.setText(timeText);
             });
 
-            refreshBtn.addActionListener(e -> refreshTable());
+
             addBtn.addActionListener(e -> openAddDialog());
             updateBtn.addActionListener(e -> openUpdateDialog());
 
             deleteBtn.addActionListener(e -> {
                 int sel = table.getSelectedRow();
-                if (sel == -1) { JOptionPane.showMessageDialog(this, "Select an item to delete."); return; }
+                if (sel == -1) {
+                    JOptionPane.showMessageDialog(this, "Select an item to delete.");
+                    return;
+                }
                 String name = table.getValueAt(sel, 0).toString();
                 int confirm = JOptionPane.showConfirmDialog(this,
                         "Delete " + name + " ?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
@@ -237,13 +282,19 @@ public class InventoryManager {
 
             restockBtn.addActionListener(e -> {
                 int sel = table.getSelectedRow();
-                if (sel == -1) { JOptionPane.showMessageDialog(this, "Select an item to restock."); return; }
+                if (sel == -1) {
+                    JOptionPane.showMessageDialog(this, "Select an item to restock.");
+                    return;
+                }
                 String name = table.getValueAt(sel, 0).toString();
                 String s = JOptionPane.showInputDialog(this, "Enter quantity to add for " + name + ":");
                 if (s == null) return;
                 try {
                     int add = Integer.parseInt(s.trim());
-                    if (add <= 0) { JOptionPane.showMessageDialog(this, "Enter a positive number."); return; }
+                    if (add <= 0) {
+                        JOptionPane.showMessageDialog(this, "Enter a positive number.");
+                        return;
+                    }
                     restockItem(name, add);
                     saveToFile();
                     refreshTable();
@@ -270,7 +321,7 @@ public class InventoryManager {
             JTextField nameField = new JTextField();
             JTextField qtyField = new JTextField();
             JTextField priceField = new JTextField();
-            final JComponent[] inputs = new JComponent[] {
+            final JComponent[] inputs = new JComponent[]{
                     new JLabel("Medicine Name:"), nameField,
                     new JLabel("Quantity (integer):"), qtyField,
                     new JLabel("Price (e.g. 12.50):"), priceField
@@ -300,16 +351,22 @@ public class InventoryManager {
 
         private void openUpdateDialog() {
             int sel = table.getSelectedRow();
-            if (sel == -1) { JOptionPane.showMessageDialog(this, "Select an item to update."); return; }
+            if (sel == -1) {
+                JOptionPane.showMessageDialog(this, "Select an item to update.");
+                return;
+            }
             String oldName = table.getValueAt(sel, 0).toString();
             InventoryItem it = items.get(oldName.toLowerCase());
-            if (it == null) { JOptionPane.showMessageDialog(this, "Selected item not found."); return; }
+            if (it == null) {
+                JOptionPane.showMessageDialog(this, "Selected item not found.");
+                return;
+            }
 
             JTextField nameField = new JTextField(it.getName());
             JTextField qtyField = new JTextField(String.valueOf(it.getQuantity()));
             JTextField priceField = new JTextField(String.valueOf(it.getPrice()));
 
-            final JComponent[] inputs = new JComponent[] {
+            final JComponent[] inputs = new JComponent[]{
                     new JLabel("Medicine Name:"), nameField,
                     new JLabel("Quantity (integer):"), qtyField,
                     new JLabel("Price (e.g. 12.50):"), priceField
@@ -338,14 +395,8 @@ public class InventoryManager {
         }
     }
 
+
     public static void main(String[] args) {
-        loadFromFile();
-        if (items.isEmpty()) {
-            addItem("Paracetamol", 100, 5.00);
-            addItem("Amoxicillin", 80, 10.00);
-            addItem("Cough Syrup", 30, 25.00);
-            saveToFile();
-        }
         SwingUtilities.invokeLater(InventoryFrame::new);
     }
 }
