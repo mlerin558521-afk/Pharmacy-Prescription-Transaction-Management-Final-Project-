@@ -2,6 +2,6 @@
 
 
 # Revision
-**InventoryManager**
+**InventoryManager/ShopPanel**
 
 - added a running time for the searching algorithm.
