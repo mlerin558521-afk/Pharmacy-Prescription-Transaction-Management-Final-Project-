@@ -1,25 +1,36 @@
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
 
 public class DashboardUser extends JFrame {
 
+    private ShopPanel shopPanel;
+    private JLabel timerLabel;
+    private Timer swingTimer;
+    private long startTime;
+
     public DashboardUser(String username) {
+        TimeMeasurement timeMeasure = new TimeMeasurement();
+        timeMeasure.start();
+
         setTitle("User Dashboard - " + username);
         setSize(800, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        Color background = new Color(245, 245, 245);
+        Color accent = new Color(0, 150, 136);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.setBackground(new Color(245, 245, 245));
-        tabs.setForeground(new Color(0, 150, 136)); 
-
-        ShopPanel shopPanel = new ShopPanel();
-        PaymentUserPanel paymentPanel = new PaymentUserPanel(shopPanel);
-
         tabs.add("Prescription", new PrescriptionUser(username));
         tabs.add("Notifications", new Notification(username));
+        ShopPanel shopPanel = new ShopPanel(tabs);
+        PaymentUserPanel paymentPanel = new PaymentUserPanel(shopPanel);
         tabs.add("Shop", shopPanel);
         tabs.add("Payment", paymentPanel);
+
+        tabs.setBackground(background);
+        tabs.setForeground(Color.DARK_GRAY);
 
         tabs.addChangeListener(e -> {
             if (tabs.getSelectedComponent() == paymentPanel) {
@@ -28,32 +39,66 @@ public class DashboardUser extends JFrame {
         });
 
         JButton logoutButton = new JButton("Log Out");
-        logoutButton.setBackground(new Color(0, 150, 136));
-        logoutButton.setForeground(Color.WHITE);
-        logoutButton.setFocusPainted(false);
-        logoutButton.setBorderPainted(false);
-        logoutButton.setOpaque(true);
+        styleButton(logoutButton, accent);
         logoutButton.addActionListener(e -> {
             dispose();
             new LoginFrame().setVisible(true);
         });
 
-        logoutButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                logoutButton.setBackground(new Color(0, 121, 107));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                logoutButton.setBackground(new Color(0, 150, 136));
-            }
-        });
+        timerLabel = new JLabel("Time running: 00:00:00", SwingConstants.RIGHT);
+        timerLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        timerLabel.setForeground(Color.DARK_GRAY);
 
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(245, 245, 245));
-        bottomPanel.add(logoutButton);
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBackground(background);
+        bottomPanel.add(logoutButton, BorderLayout.WEST);
+        bottomPanel.add(timerLabel, BorderLayout.EAST);
 
         add(tabs, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
 
+        startVisibleTimer();
+
         setVisible(true);
+
+        timeMeasure.stop();
+        timeMeasure.printDuration("DashboardUser");
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+    }
+
+    private void startVisibleTimer() {
+        startTime = System.currentTimeMillis();
+        swingTimer = new Timer(1000, e -> {
+            long elapsedMillis = System.currentTimeMillis() - startTime;
+            long totalSeconds = elapsedMillis / 1000;
+            long hours = totalSeconds / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+            long seconds = totalSeconds % 60;
+
+            timerLabel.setText(String.format("Time running: %02d:%02d:%02d", hours, minutes, seconds));
+        });
+        swingTimer.start();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new DashboardUser("testuser"));
     }
 }
