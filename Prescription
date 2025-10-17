@@ -16,21 +16,20 @@ public class Prescription extends JPanel {
         cardPanel = new JPanel(cardLayout);
         cardPanel.setBackground(new Color(175, 238, 238));
 
-        // Main menu panel
         menuPanel = new JPanel(new GridBagLayout());
         menuPanel.setBackground(new Color(175, 238, 238));
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
         buttonPanel.setBackground(new Color(175, 238, 238));
 
-        JButton btnAppointments = new JButton("🩺 Appointments");
-        JButton btnMedicines = new JButton("💊 Medicine Requests");
+        JButton btnAppointments = new JButton("Appointments");
+        JButton btnMedicines = new JButton("Medicine Requests");
 
         btnAppointments.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnMedicines.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnAppointments.setBackground(new Color(0, 150, 136)); 
+        btnAppointments.setBackground(new Color(0, 150, 136));
         btnAppointments.setForeground(Color.WHITE);
-        btnMedicines.setBackground(new Color(0, 102, 204)); 
+        btnMedicines.setBackground(new Color(0, 102, 204));
         btnMedicines.setForeground(Color.WHITE);
 
         buttonPanel.add(btnAppointments);
@@ -57,7 +56,6 @@ public class Prescription extends JPanel {
         });
     }
 
-
     class AdminAppointmentPanel extends JPanel {
         private JTextArea dataArea;
         private JComboBox<String> patientList;
@@ -70,23 +68,23 @@ public class Prescription extends JPanel {
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             setBackground(new Color(224, 255, 255));
 
-            backBtn = new JButton("⬅ Back");
+            backBtn = new JButton("Back");
             backBtn.setBackground(new Color(0, 150, 136));
             backBtn.setForeground(Color.WHITE);
+            backBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
             backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
             add(backBtn, BorderLayout.NORTH);
 
             dataArea = new JTextArea();
             dataArea.setEditable(false);
             dataArea.setFont(new Font("Consolas", Font.PLAIN, 13));
-            dataArea.setBackground(new Color(204, 255, 204));n
+            dataArea.setBackground(Color.WHITE);
             dataArea.setBorder(BorderFactory.createTitledBorder("Appointment Requests"));
             add(new JScrollPane(dataArea), BorderLayout.CENTER);
 
-          
             JPanel bottom = new JPanel(new GridLayout(5, 2, 5, 5));
             bottom.setBorder(BorderFactory.createTitledBorder("Assign Doctor and Date"));
-            bottom.setBackground(new Color(204, 255, 204)); 
+            bottom.setBackground(Color.WHITE);
 
             bottom.add(new JLabel("Select Patient:"));
             patientList = new JComboBox<>();
@@ -101,13 +99,17 @@ public class Prescription extends JPanel {
             dateField = new JTextField();
             bottom.add(dateField);
 
-            approveBtn = new JButton("✅ Approve");
-            approveBtn.setBackground(new Color(0, 102, 204));
+            approveBtn = new JButton("✔ Approve");
+            approveBtn.setBackground(new Color(0, 123, 255));
             approveBtn.setForeground(Color.WHITE);
+            approveBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            approveBtn.setFocusPainted(false);
 
-            declineBtn = new JButton("❌ Decline");
-            declineBtn.setBackground(new Color(204, 0, 0));
+            declineBtn = new JButton("✖ Decline");
+            declineBtn.setBackground(new Color(220, 53, 69));
             declineBtn.setForeground(Color.WHITE);
+            declineBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            declineBtn.setFocusPainted(false);
 
             bottom.add(approveBtn);
             bottom.add(declineBtn);
@@ -240,7 +242,6 @@ public class Prescription extends JPanel {
         }
     }
 
-
     class AdminMedicinePanel extends JPanel {
         private JTextArea dataArea;
         private JComboBox<String> patientList;
@@ -252,7 +253,6 @@ public class Prescription extends JPanel {
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             setBackground(new Color(204, 255, 255));
 
-         
             backBtn = new JButton("⬅ Back");
             backBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
             backBtn.setBackground(new Color(0, 150, 136));
@@ -260,18 +260,16 @@ public class Prescription extends JPanel {
             backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
             add(backBtn, BorderLayout.NORTH);
 
-         
             dataArea = new JTextArea();
             dataArea.setEditable(false);
             dataArea.setFont(new Font("Consolas", Font.PLAIN, 13));
-            dataArea.setBackground(new Color(204, 255, 204));
+            dataArea.setBackground(Color.WHITE);
             dataArea.setBorder(BorderFactory.createTitledBorder("Medicine Requests"));
             add(new JScrollPane(dataArea), BorderLayout.CENTER);
 
-         
             JPanel bottom = new JPanel(new GridBagLayout());
             bottom.setBorder(BorderFactory.createTitledBorder("Manage Medicine Request"));
-            bottom.setBackground(new Color(204, 255, 204));
+            bottom.setBackground(Color.WHITE);
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(5, 5, 5, 5);
             gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -291,17 +289,19 @@ public class Prescription extends JPanel {
             bottom.add(medField, gbc);
 
             gbc.gridx = 0; gbc.gridy = 2;
-            approveBtn = new JButton("✅ Approve");
-            approveBtn.setBackground(new Color(0, 102, 204));
+            approveBtn = new JButton("✔ Approve");
+            approveBtn.setBackground(new Color(0, 123, 255));
             approveBtn.setForeground(Color.WHITE);
-            approveBtn.setEnabled(false);
+            approveBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            approveBtn.setFocusPainted(false);
             bottom.add(approveBtn, gbc);
 
             gbc.gridx = 1;
-            declineBtn = new JButton("❌ Decline");
-            declineBtn.setBackground(new Color(204, 0, 0)); 
+            declineBtn = new JButton("✖ Decline");
+            declineBtn.setBackground(new Color(220, 53, 69));
             declineBtn.setForeground(Color.WHITE);
-            declineBtn.setEnabled(false);
+            declineBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            declineBtn.setFocusPainted(false);
             bottom.add(declineBtn, gbc);
 
             add(bottom, BorderLayout.SOUTH);
@@ -398,7 +398,6 @@ public class Prescription extends JPanel {
             reloadRequests();
         }
     }
-
 
     private void writeToFile(String fileName, String data) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))) {
