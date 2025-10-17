@@ -16,3 +16,7 @@
 
 - added time and date as per told by the panelist.
 - making the latest notification above as also per told by the panelist.
+
+**DoctorAvailabilityPanel**
+
+- changing the colors and removing the random box thing.
