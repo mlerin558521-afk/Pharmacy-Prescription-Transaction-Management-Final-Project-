@@ -9,8 +9,10 @@ public class ShopPanel extends JPanel {
     private JTextField searchField;
     private JLabel totalLabel, searchTimeLabel;
     private double totalCost = 0.0;
+    private JTabbedPane parentTabs;
 
-    public ShopPanel() {
+    public ShopPanel(JTabbedPane tabs) {
+        this.parentTabs = tabs; 
         setLayout(new BorderLayout());
         setBackground(new Color(245, 245, 245));
 
@@ -151,7 +153,18 @@ public class ShopPanel extends JPanel {
 
         btnAddToCart.addActionListener(e -> addToCart());
         btnClearCart.addActionListener(e -> clearCart());
-        btnCheckout.addActionListener(e -> checkout());
+
+        btnCheckout.addActionListener(e -> {
+            if (modelCart.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, "Your cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            JOptionPane.showMessageDialog(this, "Redirecting to Payment tab...", "Proceed", JOptionPane.INFORMATION_MESSAGE);
+
+            if (parentTabs != null) {
+                parentTabs.setSelectedIndex(3);
+            }
+        });
     }
 
     private void styleButton(JButton button, Color color) {
@@ -222,14 +235,6 @@ public class ShopPanel extends JPanel {
         modelCart.setRowCount(0);
         totalCost = 0;
         totalLabel.setText("Total: ₱0.00");
-    }
-
-    private void checkout() {
-        if (modelCart.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "Your cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        JOptionPane.showMessageDialog(this, "Proceed to Payment tab to pay.", "Checkout", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public DefaultTableModel getCartModel() { return modelCart; }
