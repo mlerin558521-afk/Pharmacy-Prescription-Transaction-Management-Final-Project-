@@ -7,19 +7,24 @@ public class ShopPanel extends JPanel {
     private JTable tableInventory, tableCart;
     private DefaultTableModel modelInventory, modelCart;
     private JTextField searchField;
-    private JLabel totalLabel;
+    private JLabel totalLabel, searchTimeLabel;
     private double totalCost = 0.0;
 
     public ShopPanel() {
         setLayout(new BorderLayout());
-        setBackground(new Color(245, 245, 245)); 
+        setBackground(new Color(245, 245, 245));
 
-        
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        topPanel.setBackground(new Color(230, 245, 255)); 
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.setBackground(new Color(230, 245, 255));
+
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        searchPanel.setBackground(new Color(230, 245, 255));
+
         JLabel lblSearch = new JLabel("Search Medicine:");
         lblSearch.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblSearch.setForeground(new Color(0, 100, 150)); 
+        lblSearch.setForeground(new Color(0, 100, 150));
+
         searchField = new JTextField(20);
         searchField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
 
@@ -28,17 +33,24 @@ public class ShopPanel extends JPanel {
         styleButton(btnSearch, new Color(0, 150, 136));
         styleButton(btnShowAll, new Color(0, 150, 136));
 
-        topPanel.add(lblSearch);
-        topPanel.add(searchField);
-        topPanel.add(btnSearch);
-        topPanel.add(btnShowAll);
+        searchPanel.add(lblSearch);
+        searchPanel.add(searchField);
+        searchPanel.add(btnSearch);
+        searchPanel.add(btnShowAll);
+
+        searchTimeLabel = new JLabel(" ");
+        searchTimeLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        searchTimeLabel.setForeground(Color.DARK_GRAY);
+        searchTimeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        searchTimeLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+        topPanel.add(searchPanel);
+        topPanel.add(searchTimeLabel);
         add(topPanel, BorderLayout.NORTH);
 
-        
         JPanel tablesPanel = new JPanel(new GridLayout(2, 1, 10, 10));
         tablesPanel.setBackground(new Color(245, 245, 245));
 
-        
         InventoryManager.loadFromFile();
         modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
         tableInventory = new JTable(modelInventory);
@@ -46,32 +58,35 @@ public class ShopPanel extends JPanel {
         tableInventory.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tableInventory.setRowHeight(22);
         JScrollPane scrollInventory = new JScrollPane(tableInventory);
-        scrollInventory.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
-                "Available Medicines", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+        scrollInventory.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                "Available Medicines", 0, 0,
+                new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
 
-        
         modelCart = new DefaultTableModel(new String[]{"Medicine Name", "Quantity", "Price", "Subtotal"}, 0);
         tableCart = new JTable(modelCart);
         tableCart.setFillsViewportHeight(true);
         tableCart.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tableCart.setRowHeight(22);
         JScrollPane scrollCart = new JScrollPane(tableCart);
-        scrollCart.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
-                "Shopping Cart", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+        scrollCart.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                "Shopping Cart", 0, 0,
+                new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
 
         tablesPanel.add(scrollInventory);
         tablesPanel.add(scrollCart);
         add(tablesPanel, BorderLayout.CENTER);
 
-        
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         bottomPanel.setBackground(new Color(230, 245, 255));
+
         JButton btnAddToCart = new JButton("Add to Cart");
         JButton btnClearCart = new JButton("Clear Cart");
         JButton btnCheckout = new JButton("Proceed to Payment");
         styleButton(btnAddToCart, new Color(0, 150, 136));
-        styleButton(btnClearCart, new Color(255, 112, 67)); 
-        styleButton(btnCheckout, new Color(76, 175, 80)); 
+        styleButton(btnClearCart, new Color(255, 112, 67));
+        styleButton(btnCheckout, new Color(76, 175, 80));
 
         totalLabel = new JLabel("Total: ₱0.00");
         totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -83,18 +98,55 @@ public class ShopPanel extends JPanel {
         bottomPanel.add(btnCheckout);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        
         btnSearch.addActionListener(e -> {
             String query = searchField.getText().trim();
+
+            long startTime = System.nanoTime();
             List<InventoryManager.InventoryItem> results = InventoryManager.searchItems(query);
+            long endTime = System.nanoTime();
+
+            long durationNano = endTime - startTime;
+            long durationMillis = durationNano / 1_000_000;
+            long seconds = (durationMillis / 1000) % 60;
+            long minutes = (durationMillis / (1000 * 60)) % 60;
+
+            String timeText;
+            if (minutes > 0) {
+                timeText = String.format("Search completed in %d minute%s and %d second%s • Results: %d",
+                        minutes, (minutes > 1 ? "s" : ""), seconds, (seconds != 1 ? "s" : ""), results.size());
+            } else {
+                timeText = String.format("Search completed in %d second%s • Results: %d",
+                        seconds, (seconds != 1 ? "s" : ""), results.size());
+            }
+
             modelInventory = InventoryManager.toAdminTableModel(results);
             tableInventory.setModel(modelInventory);
+            searchTimeLabel.setText(timeText);
         });
 
         btnShowAll.addActionListener(e -> {
+            long startTime = System.nanoTime();
             InventoryManager.loadFromFile();
-            modelInventory = InventoryManager.toAdminTableModel(InventoryManager.getAllItems());
+            List<InventoryManager.InventoryItem> allItems = InventoryManager.getAllItems();
+            modelInventory = InventoryManager.toAdminTableModel(allItems);
             tableInventory.setModel(modelInventory);
+            long endTime = System.nanoTime();
+
+            long durationNano = endTime - startTime;
+            long durationMillis = durationNano / 1_000_000;
+            long seconds = (durationMillis / 1000) % 60;
+            long minutes = (durationMillis / (1000 * 60)) % 60;
+
+            String timeText;
+            if (minutes > 0) {
+                timeText = String.format("Loaded all data in %d minute%s and %d second%s • Items: %d",
+                        minutes, (minutes > 1 ? "s" : ""), seconds, (seconds != 1 ? "s" : ""), allItems.size());
+            } else {
+                timeText = String.format("Loaded all data in %d second%s • Items: %d",
+                        seconds, (seconds != 1 ? "s" : ""), allItems.size());
+            }
+
+            searchTimeLabel.setText(timeText);
         });
 
         btnAddToCart.addActionListener(e -> addToCart());
@@ -119,7 +171,6 @@ public class ShopPanel extends JPanel {
         });
     }
 
-    
     private void addToCart() {
         int selectedRow = tableInventory.getSelectedRow();
         if (selectedRow == -1) {
@@ -181,7 +232,6 @@ public class ShopPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Proceed to Payment tab to pay.", "Checkout", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    
     public DefaultTableModel getCartModel() { return modelCart; }
     public double getTotalCost() { return totalCost; }
     public void resetTotal() {
