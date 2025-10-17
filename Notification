@@ -1,107 +1,136 @@
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.util.HashMap;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.List;
 
-public class LoginFrame extends JFrame {
-    private HashMap<String, String> users = new HashMap<>();
-    private JTextField usernameField;
-    private JPasswordField passwordField;
-    private static final String FILE_NAME = "users.txt";
+public class Notification extends JPanel {
+    private JTextArea notifArea;
+    private JButton refreshBtn;
+    private String username;
 
-    public LoginFrame() {
-        setTitle("Login Page");
-        setSize(400, 300);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        getContentPane().setBackground(Color.WHITE);
+    public Notification(String username) {
+        this.username = username;
+
         setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(new Color(245, 245, 245));
 
-        loadUsersFromFile();
+        JLabel title = new JLabel("Notifications", JLabel.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        title.setForeground(new Color(0, 100, 150));
+        add(title, BorderLayout.NORTH);
 
-        if (!users.containsKey("admin")) {
-            users.put("admin", "admin");
-            saveUsersToFile();
+        notifArea = new JTextArea();
+        notifArea.setEditable(false);
+        notifArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        notifArea.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
+        notifArea.setBackground(new Color(255, 255, 245)); 
+        add(new JScrollPane(notifArea), BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(new Color(230, 245, 255));
+        refreshBtn = new JButton("Refresh Notifications");
+        styleButton(refreshBtn, new Color(0, 150, 136));
+        bottomPanel.add(refreshBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        refreshBtn.addActionListener(e -> loadNotifications());
+
+        loadNotifications();
+    }
+
+    public void loadNotifications() {
+        notifArea.setText("");
+        List<String> notifications = new ArrayList<>();
+
+        loadFile("approved_appointments.txt", (parts) -> {
+            if (parts.length >= 3 && parts[0].equals(username)) {
+                String msg = String.format(
+                    "Appointment Approved!\nDoctor: %s\nDate: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], parts[2], getCurrentTime());
+                notifications.add(msg);
+                return true;
+            }
+            return false;
+        });
+
+        loadFile("declined_appointments.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                String msg = String.format(
+                    "Appointment Declined\nReason: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
+                return true;
+            }
+            return false;
+        });
+
+        loadFile("medicine_advice.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                String msg = String.format(
+                    "Medicine Request Approved!\nPrescription: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
+                return true;
+            }
+            return false;
+        });
+
+        loadFile("declined_medicine.txt", (parts) -> {
+            if (parts.length >= 2 && parts[0].equals(username)) {
+                String msg = String.format(
+                    "Medicine Request Declined\nReason: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
+                return true;
+            }
+            return false;
+        });
+
+        Collections.reverse(notifications);
+
+        if (notifications.isEmpty()) {
+            notifArea.setText("No notifications yet.");
+        } else {
+            for (String notif : notifications) {
+                notifArea.append(notif);
+            }
         }
 
-        JLabel titleLabel = new JLabel("Welcome!", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(0, 150, 136));
+        notifArea.setCaretPosition(0);
+    }
 
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
-        titlePanel.add(titleLabel, BorderLayout.CENTER);
-
-        add(titlePanel, BorderLayout.NORTH);
-
-        JPanel formPanel = new JPanel();
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        JLabel userLabel = new JLabel("Username:");
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        usernameField = new JTextField(15);
-        usernameField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
-
-        JLabel passLabel = new JLabel("Password:");
-        passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        passwordField = new JPasswordField(15);
-        passwordField.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2));
-
-        gbc.gridx = 0; gbc.gridy = 0;
-        formPanel.add(userLabel, gbc);
-        gbc.gridx = 1;
-        formPanel.add(usernameField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(passLabel, gbc);
-        gbc.gridx = 1;
-        formPanel.add(passwordField, gbc);
-
-        add(formPanel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(Color.WHITE);
-        JButton loginButton = new JButton("Login");
-        JButton signupButton = new JButton("Sign Up");
-        styleButton(loginButton, new Color(0, 150, 136));
-        styleButton(signupButton, new Color(76, 175, 80));
-        buttonPanel.add(loginButton);
-        buttonPanel.add(signupButton);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        loginButton.addActionListener(e -> {
-            String user = usernameField.getText().trim();
-            String pass = new String(passwordField.getPassword());
-
-            if (users.containsKey(user) && users.get(user).equals(pass)) {
-                JOptionPane.showMessageDialog(this, "Login Successful!");
-                if (user.equals("admin")) {
-                    new DashboardAdmin();
-                } else {
-                    new DashboardUser(user);
+    private boolean loadFile(String fileName, FileProcessor processor) {
+        boolean found = false;
+        File file = new File(fileName);
+        if (file.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split(",", 3);
+                    if (processor.process(parts)) found = true;
                 }
-                dispose();
-            } else {
-                JOptionPane.showMessageDialog(this, "Invalid username or password.");
+            } catch (IOException e) {
+                notifArea.append("Error reading " + fileName + "\n");
             }
-        });
+        }
+        return found;
+    }
 
-        signupButton.addActionListener(e -> {
-            new SignUpPage(users, this);
-            setVisible(false);
-        });
+    private String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy - hh:mm a");
+        return sdf.format(new Date());
+    }
+
+    private interface FileProcessor {
+        boolean process(String[] parts);
     }
 
     private void styleButton(JButton button, Color color) {
         button.setBackground(color);
         button.setForeground(Color.WHITE);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
@@ -113,105 +142,14 @@ public class LoginFrame extends JFrame {
         });
     }
 
-    private void loadUsersFromFile() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(":");
-                if (parts.length == 2) {
-                    users.put(parts[0], parts[1]);
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("No existing user file found, creating new one...");
-        }
-    }
-
-    private void saveUsersToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
-            for (String username : users.keySet()) {
-                writer.write(username + ":" + users.get(username));
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving users.");
-        }
-    }
-
-    class SignUpPage extends JFrame {
-        public SignUpPage(HashMap<String, String> users, JFrame loginPage) {
-            setTitle("Sign Up");
-            setSize(400, 350);
-            setLocationRelativeTo(null);
-            setLayout(new GridBagLayout());
-            getContentPane().setBackground(Color.WHITE);
-
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(10, 10, 10, 10);
-            gbc.anchor = GridBagConstraints.WEST;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            JLabel title = new JLabel("Create Your Account", SwingConstants.CENTER);
-            title.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            title.setForeground(new Color(0, 150, 136));
-            gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-            add(title, gbc);
-
-            gbc.gridwidth = 1;
-
-            JLabel nameLabel = new JLabel("Full Name:");
-            JTextField nameField = new JTextField(15);
-            JLabel userLabel = new JLabel("Username:");
-            JTextField userField = new JTextField(15);
-            JLabel passLabel = new JLabel("Password:");
-            JPasswordField passField = new JPasswordField(15);
-            JLabel emailLabel = new JLabel("Email:");
-            JTextField emailField = new JTextField(15);
-
-            JButton backButton = new JButton("Back");
-            JButton registerButton = new JButton("Register");
-            styleButton(backButton, new Color(0, 150, 136));
-            styleButton(registerButton, new Color(76, 175, 80));
-
-            gbc.gridx = 0; gbc.gridy = 1; add(nameLabel, gbc);
-            gbc.gridx = 1; add(nameField, gbc);
-            gbc.gridx = 0; gbc.gridy = 2; add(userLabel, gbc);
-            gbc.gridx = 1; add(userField, gbc);
-            gbc.gridx = 0; gbc.gridy = 3; add(passLabel, gbc);
-            gbc.gridx = 1; add(passField, gbc);
-            gbc.gridx = 0; gbc.gridy = 4; add(emailLabel, gbc);
-            gbc.gridx = 1; add(emailField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 5; add(backButton, gbc);
-            gbc.gridx = 1; add(registerButton, gbc);
-
-            registerButton.addActionListener(e -> {
-                String newUser = userField.getText().trim();
-                String newPass = new String(passField.getPassword());
-
-                if (newUser.isEmpty() || newPass.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please fill all fields!");
-                } else if (users.containsKey(newUser)) {
-                    JOptionPane.showMessageDialog(this, "Username already exists!");
-                } else {
-                    users.put(newUser, newPass);
-                    saveUsersToFile();
-                    JOptionPane.showMessageDialog(this, "Account created successfully!");
-                    dispose();
-                    loginPage.setVisible(true);
-                }
-            });
-
-            backButton.addActionListener(e -> {
-                dispose();
-                loginPage.setVisible(true);
-            });
-
-            setVisible(true);
-        }
-    }
-
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("User Notifications");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(700, 500);
+            frame.add(new Notification("testuser"));
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }
