@@ -1,0 +1,25 @@
+public class TimeMeasurement {
+    private long startTime;
+    private long endTime;
+
+    public void start() {
+        startTime = System.nanoTime();
+    }
+
+    public void stop() {
+        endTime = System.nanoTime();
+    }
+
+    public long getDurationNano() {
+        return endTime - startTime;
+    }
+
+    public double getDurationMillis() {
+        return (endTime - startTime) / 1_000_000.0;
+    }
+
+    public void printDuration(String processName) {
+        System.out.println(processName + " took: " + getDurationNano() + " ns (" 
+                           + String.format("%.3f", getDurationMillis()) + " ms)");
+    }
+}
