@@ -2,6 +2,12 @@
 
 
 # Changes made
+
+**LoginFrame**
+
+- changed how it looks.
+- added an information form when you click sign up.
+
 **InventoryManager/ShopPanel/StocksPanel**
 
 - added a running time for the searching algorithm.
