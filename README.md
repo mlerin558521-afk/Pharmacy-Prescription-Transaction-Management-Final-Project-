@@ -1,7 +1,7 @@
 # Pharmacy-Prescription-Transaction-Management-Final-Project-
 
 
-# Revision
+# Changes made
 **InventoryManager/ShopPanel/StocksPanel**
 
 - added a running time for the searching algorithm.
