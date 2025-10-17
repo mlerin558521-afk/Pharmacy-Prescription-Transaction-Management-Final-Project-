@@ -1,6 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.List;
 
 public class Notification extends JPanel {
     private JTextArea notifArea;
@@ -14,7 +17,7 @@ public class Notification extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(new Color(245, 245, 245));
 
-        JLabel title = new JLabel("🔔 Notifications", JLabel.CENTER);
+        JLabel title = new JLabel("Notifications", JLabel.CENTER);
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         title.setForeground(new Color(0, 100, 150));
         add(title, BorderLayout.NORTH);
@@ -28,7 +31,7 @@ public class Notification extends JPanel {
 
         JPanel bottomPanel = new JPanel();
         bottomPanel.setBackground(new Color(230, 245, 255));
-        refreshBtn = new JButton("🔄 Refresh Notifications");
+        refreshBtn = new JButton("Refresh Notifications");
         styleButton(refreshBtn, new Color(0, 150, 136));
         bottomPanel.add(refreshBtn);
         add(bottomPanel, BorderLayout.SOUTH);
@@ -39,52 +42,64 @@ public class Notification extends JPanel {
     }
 
     public void loadNotifications() {
-        notifArea.setText(""); 
-        boolean found = false;
+        notifArea.setText("");
+        List<String> notifications = new ArrayList<>();
 
-        found |= loadFile("approved_appointments.txt", (parts) -> {
+        loadFile("approved_appointments.txt", (parts) -> {
             if (parts.length >= 3 && parts[0].equals(username)) {
-                notifArea.append("🩺 Appointment Approved!\n");
-                notifArea.append("Doctor: " + parts[1] + "\nDate: " + parts[2] + "\n");
-                notifArea.append("--------------------------------------\n");
+                String msg = String.format(
+                    "Appointment Approved!\nDoctor: %s\nDate: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], parts[2], getCurrentTime());
+                notifications.add(msg);
                 return true;
             }
             return false;
         });
 
-        found |= loadFile("declined_appointments.txt", (parts) -> {
+        loadFile("declined_appointments.txt", (parts) -> {
             if (parts.length >= 2 && parts[0].equals(username)) {
-                notifArea.append("❌ Appointment Declined\n");
-                notifArea.append("Reason: " + parts[1] + "\n");
-                notifArea.append("--------------------------------------\n");
+                String msg = String.format(
+                    "Appointment Declined\nReason: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
                 return true;
             }
             return false;
         });
 
-        found |= loadFile("medicine_advice.txt", (parts) -> {
+        loadFile("medicine_advice.txt", (parts) -> {
             if (parts.length >= 2 && parts[0].equals(username)) {
-                notifArea.append("💊 Medicine Request Approved!\n");
-                notifArea.append("Prescription: " + parts[1] + "\n");
-                notifArea.append("--------------------------------------\n");
+                String msg = String.format(
+                    "Medicine Request Approved!\nPrescription: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
                 return true;
             }
             return false;
         });
 
-        found |= loadFile("declined_medicine.txt", (parts) -> {
+        loadFile("declined_medicine.txt", (parts) -> {
             if (parts.length >= 2 && parts[0].equals(username)) {
-                notifArea.append("🚫 Medicine Request Declined\n");
-                notifArea.append("Reason: " + parts[1] + "\n");
-                notifArea.append("--------------------------------------\n");
+                String msg = String.format(
+                    "Medicine Request Declined\nReason: %s\nTime: %s\n--------------------------------------\n",
+                    parts[1], getCurrentTime());
+                notifications.add(msg);
                 return true;
             }
             return false;
         });
 
-        if (!found) {
-            notifArea.setText("📭 No notifications yet.");
+        Collections.reverse(notifications);
+
+        if (notifications.isEmpty()) {
+            notifArea.setText("No notifications yet.");
+        } else {
+            for (String notif : notifications) {
+                notifArea.append(notif);
+            }
         }
+
+        notifArea.setCaretPosition(0);
     }
 
     private boolean loadFile(String fileName, FileProcessor processor) {
@@ -98,10 +113,15 @@ public class Notification extends JPanel {
                     if (processor.process(parts)) found = true;
                 }
             } catch (IOException e) {
-                notifArea.append("⚠️ Error reading " + fileName + "\n");
+                notifArea.append("Error reading " + fileName + "\n");
             }
         }
         return found;
+    }
+
+    private String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy - hh:mm a");
+        return sdf.format(new Date());
     }
 
     private interface FileProcessor {
