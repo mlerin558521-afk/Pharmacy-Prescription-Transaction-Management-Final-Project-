@@ -19,8 +19,8 @@ public class PrescriptionUser extends JPanel {
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
         buttonPanel.setBackground(new Color(245, 245, 245));
 
-        JButton btnAppointment = new JButton("🩺 Request Appointment");
-        JButton btnMedicine = new JButton("💊 Request Medicine");
+        JButton btnAppointment = new JButton("Request Appointment");
+        JButton btnMedicine = new JButton("Request Medicine");
 
         btnAppointment.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnMedicine.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -45,7 +45,6 @@ public class PrescriptionUser extends JPanel {
         btnMedicine.addActionListener(e -> cardLayout.show(cardPanel, "MEDICINE"));
     }
 
-
     class AppointmentFormPanel extends JPanel {
         private JTextField nameField, ageField, genderField, contactField, symptomsField;
         private JTextArea messageArea;
@@ -58,15 +57,17 @@ public class PrescriptionUser extends JPanel {
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             setBackground(new Color(245, 245, 245));
 
-            backBtn = new JButton("⬅ Back");
+            backBtn = new JButton("Back");
             styleButton(backBtn, new Color(0, 100, 150));
             backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
             add(backBtn, BorderLayout.NORTH);
 
             JPanel form = new JPanel(new GridLayout(5, 2, 5, 5));
-            form.setBackground(new Color(255, 255, 245)); // soft cream
-            form.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
-                    "Appointment Request Form", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+            form.setBackground(Color.WHITE);
+            form.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(0, 150, 136), 2),
+                    "Appointment Request Form", 0, 0,
+                    new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
 
             form.add(new JLabel("Full Name:"));
             nameField = new JTextField();
@@ -96,7 +97,7 @@ public class PrescriptionUser extends JPanel {
             styleButton(submitBtn, new Color(0, 150, 136));
             messageArea = new JTextArea(4, 40);
             messageArea.setEditable(false);
-            messageArea.setBackground(new Color(255, 255, 235));
+            messageArea.setBackground(Color.WHITE);
             messageArea.setBorder(BorderFactory.createTitledBorder("Message"));
 
             bottom.add(submitBtn, BorderLayout.NORTH);
@@ -118,7 +119,6 @@ public class PrescriptionUser extends JPanel {
         }
     }
 
-
     class MedicineFormPanel extends JPanel {
         private JTextField nameField, ageField, genderField, symptomsField, allergiesField;
         private JTextArea messageArea;
@@ -131,15 +131,17 @@ public class PrescriptionUser extends JPanel {
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             setBackground(new Color(245, 245, 245));
 
-            backBtn = new JButton("⬅ Back");
+            backBtn = new JButton("Back");
             styleButton(backBtn, new Color(0, 100, 150));
             backBtn.addActionListener(e -> cardLayout.show(cardPanel, "MENU"));
             add(backBtn, BorderLayout.NORTH);
 
             JPanel form = new JPanel(new GridLayout(6, 2, 5, 5));
-            form.setBackground(new Color(255, 255, 245));
-            form.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(76, 175, 80), 2),
-                    "Medicine Inquiry Form", 0, 0, new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
+            form.setBackground(Color.WHITE);
+            form.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(76, 175, 80), 2),
+                    "Medicine Inquiry Form", 0, 0,
+                    new Font("Segoe UI", Font.BOLD, 14), new Color(0, 100, 150)));
 
             form.add(new JLabel("Full Name:"));
             nameField = new JTextField();
@@ -169,7 +171,7 @@ public class PrescriptionUser extends JPanel {
             styleButton(submitBtn, new Color(76, 175, 80));
             messageArea = new JTextArea(4, 40);
             messageArea.setEditable(false);
-            messageArea.setBackground(new Color(255, 255, 235));
+            messageArea.setBackground(Color.WHITE);
             messageArea.setBorder(BorderFactory.createTitledBorder("Message"));
 
             bottom.add(submitBtn, BorderLayout.NORTH);
@@ -193,18 +195,29 @@ public class PrescriptionUser extends JPanel {
     private void styleButton(JButton button, Color color) {
         button.setBackground(color);
         button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
         button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.putClientProperty("JButton.buttonType", "none");
 
         button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { button.setBackground(color.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt) { button.setBackground(color); }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
         });
     }
 
     public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception ignored) {}
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Prescription User Panel Test");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
