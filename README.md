@@ -1,22 +1,24 @@
 # Pharmacy-Prescription-Transaction-Management-Final-Project-
 
 
-# Changes made
+# Revision and Improvement
 
 **LoginFrame**
-
-- changed how it looks.
-- added an information form when you click sign up.
-
-**InventoryManager/ShopPanel/StocksPanel**
-
-- added a running time for the searching algorithm.
+- changed the login page.
+- added an information details as per said by the panelist in the Sign up page
+- removed the run time below.
 
 **Notification**
+- made the latest notification above instead of it showing in the bottom.
+- added time and date of the notification.
 
-- added time and date as per told by the panelist.
-- making the latest notification above as also per told by the panelist.
+**ShopPanel**
+- whenever you purchased an item, it will direct you to the Payment tab when you clicked "proceed to payment".
 
-**DoctorAvailabilityPanel**
+**PaymentUserPanel**
+- added the visual choice of payment.
 
-- changing the colors and removing the random box thing.
+
+**Overall changes**
+- removed all the box icon
+- changed the colors (some)
