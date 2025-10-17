@@ -22,3 +22,4 @@
 **Overall changes**
 - removed all the box icon
 - changed the colors (some)
+- added the run time for our searching algorithm which it will show to StocksPanel, InventoryManager, and ShopPanel.
